@@ -1,0 +1,576 @@
+:root{
+  --page-blue-1:#c3d3f0;
+  --page-blue-2:#93add8;
+  --cream:#f1e6d6;
+  --cream-deep:#e2d2bd;
+  --cream-shadow:#c7b79c;
+  --ink:#3a2c1e;
+  --ink-soft:#6b5940;
+  --screen-bg:#0c0e0b;
+  --screen-line:#242821;
+  --cyan:#5be0f2;
+  --gold:#e0a83a;
+  --good:#57c785;
+  --bad:#e0605a;
+
+  --note-c:#cf6f52;
+  --note-d:#dd8f42;
+  --note-e:#e2b558;
+  --note-f:#a4a260;
+  --note-g:#57ab90;
+  --note-a:#5f8fb0;
+  --note-b:#8c7fc4;
+  --note-c2:#eee5d6;
+}
+
+*{box-sizing:border-box;}
+
+body{
+  margin:0;
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 50% -10%, #d7e2f6, transparent 55%),
+    linear-gradient(180deg, var(--page-blue-1), var(--page-blue-2));
+  color:var(--ink);
+  font-family:"Segoe UI",Verdana,Arial,sans-serif;
+  display:flex;
+  justify-content:center;
+  padding:32px 16px 60px;
+}
+
+.stage{
+  width:100%;
+  max-width:640px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+/* ---------------- Tab bar ---------------- */
+.tabbar{
+  display:flex;
+  gap:8px;
+  width:100%;
+  margin-bottom:16px;
+}
+.tab-btn{
+  flex:1;
+  padding:11px 12px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(180deg, #fbf6ec, var(--cream-deep));
+  color:var(--ink-soft);
+  font-family:inherit;
+  font-weight:700;
+  font-size:.82rem;
+  letter-spacing:.3px;
+  box-shadow:0 3px 0 var(--cream-shadow), 0 5px 8px rgba(0,0,0,.18);
+  cursor:pointer;
+  transition:transform .05s ease, box-shadow .05s ease;
+}
+.tab-btn.active{
+  background:linear-gradient(180deg, #f3c98a, var(--gold));
+  color:#4a2f08;
+  transform:translateY(2px);
+  box-shadow:0 1px 0 var(--cream-shadow), 0 2px 4px rgba(0,0,0,.18);
+}
+.tab-panel[hidden]{display:none;}
+
+/* ---------------- Console shell ---------------- */
+.console{
+  position:relative;
+  width:100%;
+  background:linear-gradient(165deg, #f7efe2, var(--cream) 45%, var(--cream-deep));
+  border-radius:46px;
+  padding:56px 20px 30px;
+  box-shadow:
+    0 24px 46px rgba(30,26,18,.35),
+    0 3px 0 var(--cream-shadow) inset,
+    0 -10px 22px rgba(120,100,70,.18) inset;
+}
+
+/* ---------------- Breath tube ---------------- */
+.tube-wrap{
+  position:absolute;
+  top:-58px;
+  left:50%;
+  transform:translateX(-50%);
+}
+.tube{overflow:visible;}
+.tube-path{
+  fill:none;
+  stroke:#fbf7ef;
+  stroke-width:9;
+  stroke-linecap:round;
+  filter:drop-shadow(0 3px 4px rgba(0,0,0,.25));
+}
+.tube-nozzle{
+  fill:#e7ddcb;
+  stroke:var(--cream-shadow);
+  stroke-width:2;
+  transition:fill .2s ease;
+}
+.breath-puff.blowing .tube-nozzle{fill:var(--cyan);}
+
+.breath-puff{
+  position:absolute;
+  top:12px;
+  left:37px;
+  width:6px;
+  height:6px;
+}
+.puff-ring{
+  position:absolute;
+  top:0;
+  left:0;
+  width:16px;
+  height:16px;
+  border:2px solid var(--cyan);
+  border-radius:50%;
+  transform:translate(-50%,-50%) scale(.3);
+  opacity:0;
+  animation:puff 1.2s ease-out infinite;
+  animation-play-state:paused;
+  pointer-events:none;
+}
+.breath-puff.blowing .puff-ring{animation-play-state:running;}
+.r2{animation-delay:.3s;}
+.r3{animation-delay:.6s;}
+@keyframes puff{
+  0%{transform:translate(-50%,-50%) scale(.3);opacity:.9;}
+  100%{transform:translate(-50%,-50%) scale(2.4);opacity:0;}
+}
+
+.brand{
+  margin:0 0 20px;
+  text-align:center;
+  font-size:1.15rem;
+  font-weight:700;
+  letter-spacing:1px;
+  color:var(--ink-soft);
+}
+
+/* ---------------- Deck: side controls + screen ---------------- */
+.deck{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:14px;
+  margin-bottom:18px;
+}
+
+.side-controls{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.stepper-pill{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  position:relative;
+  background:linear-gradient(180deg, #fbf6ec, var(--cream-deep));
+  border:none;
+  border-radius:999px;
+  padding:8px 10px 16px;
+  box-shadow:0 3px 0 var(--cream-shadow), 0 5px 8px rgba(0,0,0,.18);
+  font-family:inherit;
+  cursor:default;
+}
+.stepper-pill small{
+  position:absolute;
+  bottom:3px;
+  left:0;
+  right:0;
+  text-align:center;
+  font-size:.55rem;
+  font-weight:700;
+  letter-spacing:1px;
+  color:var(--ink-soft);
+}
+.pill-icon{font-size:1rem;color:var(--ink-soft);}
+.pill-icon-svg{width:16px;height:16px;fill:var(--ink-soft);stroke:var(--ink-soft);}
+
+.chev{
+  border:none;
+  background:transparent;
+  color:var(--ink);
+  font-size:1.1rem;
+  font-weight:700;
+  line-height:1;
+  padding:2px 5px;
+  cursor:pointer;
+  border-radius:6px;
+}
+.chev:active{background:rgba(0,0,0,.08);}
+
+.hold-pill{
+  cursor:pointer;
+  user-select:none;
+  transition:transform .05s ease, box-shadow .05s ease;
+}
+.hold-pill.active{
+  transform:translateY(3px);
+  box-shadow:0 0 0 var(--cream-shadow), 0 2px 4px rgba(0,0,0,.18);
+  background:linear-gradient(180deg, #f3c98a, var(--gold));
+}
+.hold-pill.active .pill-icon{color:#4a2f08;}
+
+/* ---------------- Screen ---------------- */
+.screen{
+  background:var(--screen-bg);
+  border-radius:20px;
+  padding:12px 14px 10px;
+  box-shadow:
+    0 0 0 6px #d8c8ae,
+    inset 0 2px 6px rgba(0,0,0,.6);
+}
+
+.screen-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-bottom:8px;
+}
+.screen-row.track-row{
+  grid-template-columns:auto 1fr;
+  align-items:baseline;
+  gap:8px;
+  margin-bottom:0;
+  padding-top:6px;
+  border-top:1px solid var(--screen-line);
+}
+
+.tile{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.t-label{
+  font-size:.55rem;
+  font-weight:700;
+  letter-spacing:1.5px;
+  color:var(--cyan);
+}
+.t-value{
+  font-size:.95rem;
+  font-weight:700;
+  color:#f4f1ea;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.track-name{font-size:.85rem;}
+
+.breath-dot{
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#5a5044;
+}
+.breath-value.on .breath-dot{background:var(--good); box-shadow:0 0 6px var(--good);}
+.breath-value.on{color:var(--good);}
+.breath-value.on #breathText{color:var(--good);}
+
+/* Inhaling mutes the instrument — flagged in red so it reads as distinct
+   from the green "exhaling" state rather than just "not on". */
+.breath-value.muted .breath-dot{background:var(--bad); box-shadow:0 0 6px var(--bad);}
+.breath-value.muted{color:var(--bad);}
+.breath-value.muted #breathText{color:var(--bad);}
+
+.level-meter{
+  display:flex;
+  align-items:flex-end;
+  gap:2px;
+  height:12px;
+  margin-top:2px;
+}
+.level-meter i{
+  display:block;
+  width:4px;
+  height:40%;
+  background:var(--screen-line);
+  border-radius:1px;
+}
+.level-meter i:nth-child(1){height:30%;}
+.level-meter i:nth-child(2){height:50%;}
+.level-meter i:nth-child(3){height:65%;}
+.level-meter i:nth-child(4){height:82%;}
+.level-meter i:nth-child(5){height:100%;}
+.level-meter i.filled{background:var(--cyan);}
+
+/* ---------------- Power button ---------------- */
+.power-btn{
+  display:block;
+  margin:0 auto 26px;
+  width:34px;
+  height:34px;
+  border-radius:6px;
+  border:none;
+  background:linear-gradient(180deg, #2b2b2b, #000);
+  box-shadow:0 2px 0 rgba(0,0,0,.4), 0 4px 6px rgba(0,0,0,.2);
+  cursor:pointer;
+  padding:7px;
+}
+.power-btn svg{width:100%;height:100%;fill:#fff;stroke:none;}
+.power-btn.playing{background:linear-gradient(180deg, #f3c98a, var(--gold));}
+.power-btn.playing svg{fill:#4a2f08;}
+
+/* ---------------- Note pads ---------------- */
+.pad-deck{
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-bottom:22px;
+}
+
+.note-btn{
+  --nc:var(--note-c);
+  position:relative;
+  width:56px;
+  height:56px;
+  border:none;
+  border-radius:50%;
+  background:radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--nc) 55%, white), var(--nc) 55%, color-mix(in srgb, var(--nc) 75%, black) 100%);
+  box-shadow:0 5px 0 color-mix(in srgb, var(--nc) 60%, black), 0 9px 12px rgba(0,0,0,.3);
+  color:#fff;
+  font-weight:700;
+  font-size:1.05rem;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  user-select:none;
+  transition:transform .05s ease, box-shadow .05s ease, filter .1s ease;
+  text-shadow:0 1px 2px rgba(0,0,0,.25);
+}
+.note-btn:nth-child(1){--nc:var(--note-c);}
+.note-btn:nth-child(2){--nc:var(--note-d); transform:translateY(8px);}
+.note-btn:nth-child(3){--nc:var(--note-e); transform:translateY(14px);}
+.note-btn:nth-child(4){--nc:var(--note-f); transform:translateY(6px); margin-right:9px;}
+.note-btn:nth-child(5){--nc:var(--note-g); transform:translateY(6px);}
+.note-btn:nth-child(6){--nc:var(--note-a); transform:translateY(14px);}
+.note-btn:nth-child(7){--nc:var(--note-b); transform:translateY(8px);}
+.note-btn:nth-child(8){
+  --nc:var(--note-c2);
+  color:var(--ink);
+  text-shadow:none;
+  box-shadow:0 5px 0 var(--cream-shadow), 0 9px 12px rgba(0,0,0,.3), inset 0 0 0 2px rgba(0,0,0,.08);
+}
+
+.note-btn .key-label{
+  position:absolute;
+  top:9px;
+  right:11px;
+  font-size:.55rem;
+  opacity:.8;
+}
+
+.note-btn.fingered{
+  transform:translateY(5px) !important;
+  box-shadow:0 0 0 color-mix(in srgb, var(--nc) 60%, black), 0 4px 6px rgba(0,0,0,.25);
+  filter:grayscale(.5) brightness(.82);
+}
+
+.note-btn.active{
+  transform:translateY(5px) !important;
+  box-shadow:0 0 0 color-mix(in srgb, var(--nc) 60%, black), 0 4px 6px rgba(0,0,0,.25), 0 0 14px color-mix(in srgb, var(--nc) 70%, white);
+  filter:none;
+}
+
+.note-btn.sharp-active{
+  --nc:var(--gold);
+}
+
+/* ---------------- Hint / footer ---------------- */
+.hint{
+  text-align:center;
+  margin:0;
+  font-size:.72rem;
+  color:var(--ink-soft);
+}
+.hint kbd{
+  display:inline-block;
+  background:var(--ink);
+  color:var(--cream);
+  border-radius:4px;
+  padding:1px 5px;
+  margin:0 1px;
+  font-size:.68rem;
+}
+
+.breath-test-btn{
+  margin-top:18px;
+  padding:9px 16px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.4);
+  background:rgba(255,255,255,.15);
+  color:var(--ink);
+  font-weight:600;
+  font-size:.8rem;
+  cursor:pointer;
+}
+.breath-test-btn.blowing{
+  background:var(--cyan);
+  border-color:var(--cyan);
+}
+
+/* ---------------- Breath Garden ---------------- */
+.garden-console{
+  position:relative;
+  width:100%;
+  background:linear-gradient(165deg, #f7efe2, var(--cream) 45%, var(--cream-deep));
+  border-radius:46px;
+  padding:26px 20px 30px;
+  box-shadow:
+    0 24px 46px rgba(30,26,18,.35),
+    0 3px 0 var(--cream-shadow) inset,
+    0 -10px 22px rgba(120,100,70,.18) inset;
+}
+
+.garden-field{
+  position:relative;
+  margin:18px 0 10px;
+}
+
+.rain-layer{
+  position:absolute;
+  inset:-14px -6px -6px;
+  overflow:hidden;
+  border-radius:22px;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .35s ease;
+  z-index:2;
+}
+.rain-layer.active{opacity:1;}
+
+.raindrop{
+  position:absolute;
+  top:-10%;
+  width:2px;
+  height:16px;
+  border-radius:2px;
+  background:linear-gradient(180deg, rgba(91,224,242,0), var(--cyan) 65%, rgba(91,224,242,.9));
+  animation-name:raindrop-fall;
+  animation-timing-function:linear;
+  animation-iteration-count:infinite;
+  animation-play-state:paused;
+}
+.rain-layer.active .raindrop{animation-play-state:running;}
+/* Animates "top" (a % of the rain-layer's own height) rather than a
+   transform (which resolves % against the raindrop's own tiny height) —
+   otherwise each drop only travels a few px and never crosses the plots. */
+@keyframes raindrop-fall{
+  0%{top:-10%; opacity:0;}
+  12%{opacity:.9;}
+  100%{top:108%; opacity:0;}
+}
+
+.garden-grid{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:10px;
+}
+
+.plot{
+  position:relative;
+  aspect-ratio:1;
+  border-radius:18px;
+  background:linear-gradient(165deg, #dcefff, #b7d9c0);
+  box-shadow:0 4px 0 rgba(0,0,0,.14), 0 6px 10px rgba(0,0,0,.2);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  transition:box-shadow .15s ease;
+}
+
+.plot-icon{
+  display:inline-block;
+  font-size:1.7rem;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.2));
+}
+.plot-icon.plot-empty{
+  font-size:1.4rem;
+  font-weight:700;
+  color:var(--ink-soft);
+  opacity:.4;
+  filter:none;
+}
+
+.plot-key{
+  position:absolute;
+  top:5px;
+  right:7px;
+  font-size:.6rem;
+  font-weight:700;
+  letter-spacing:.5px;
+  color:var(--ink-soft);
+  opacity:.75;
+}
+
+.plot.held{
+  box-shadow:0 0 0 3px var(--cyan) inset, 0 4px 0 rgba(0,0,0,.14), 0 6px 10px rgba(0,0,0,.2);
+}
+
+.plot.ripe{animation:ripe-glow 1.3s ease-in-out infinite;}
+@keyframes ripe-glow{
+  0%,100%{box-shadow:0 0 0 3px transparent inset, 0 4px 0 rgba(0,0,0,.14), 0 0 0 rgba(224,168,58,0);}
+  50%{box-shadow:0 0 0 3px var(--gold) inset, 0 4px 0 rgba(0,0,0,.14), 0 0 16px 3px rgba(224,168,58,.55);}
+}
+
+.plot.watering{
+  box-shadow:0 0 0 3px var(--cyan) inset, 0 0 14px 3px rgba(91,224,242,.55), 0 4px 0 rgba(0,0,0,.14);
+}
+.plot.watering .plot-icon{animation:water-bob .6s ease-in-out infinite;}
+@keyframes water-bob{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-3px) scale(1.05);}
+}
+
+.plot.stage-pop .plot-icon{animation:stage-pop-kf .45s ease;}
+@keyframes stage-pop-kf{
+  0%{transform:scale(.6) rotate(-10deg); opacity:.3;}
+  55%{transform:scale(1.3) rotate(5deg); opacity:1;}
+  100%{transform:scale(1) rotate(0);}
+}
+
+.plot-bar{
+  position:absolute;
+  left:10%;
+  right:10%;
+  bottom:9%;
+  height:5px;
+  border-radius:3px;
+  background:rgba(0,0,0,.18);
+  overflow:hidden;
+}
+.plot-bar i{
+  display:block;
+  height:100%;
+  width:0%;
+  background:var(--good);
+  transition:width .25s ease;
+}
+
+.app-footer{
+  margin-top:16px;
+  font-size:.72rem;
+  color:#3d4f7a;
+  text-align:center;
+  max-width:520px;
+}
+
+@media(max-width:520px){
+  .deck{grid-template-columns:1fr;}
+  .side-controls{flex-direction:row; justify-content:center;}
+  .note-btn{width:52px;height:52px;font-size:1rem;}
+}

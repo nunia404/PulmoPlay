@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PulmoPlay - 9 Button Clarinet</title>
+<link rel="stylesheet" href="style.css?v=5">
+</head>
+<body>
+
+<main class="stage">
+
+  <div class="tabbar" role="tablist">
+    <button class="tab-btn active" id="tabClarinetBtn" type="button" data-tab="clarinet" role="tab" aria-selected="true">&#9835; Clarinet</button>
+    <button class="tab-btn" id="tabGardenBtn" type="button" data-tab="garden" role="tab" aria-selected="false">&#127793; Breath Garden</button>
+  </div>
+
+  <section class="tab-panel" id="panel-clarinet" data-panel="clarinet">
+    <div class="console">
+
+      <div class="tube-wrap">
+        <svg class="tube" viewBox="0 0 120 130" width="64" height="70" aria-hidden="true">
+          <path class="tube-path" d="M60 130 L60 68 C60 40 40 42 40 22 C40 6 56 -1 67 8 C75 15 72 27 61 28" />
+          <circle class="tube-nozzle" id="tubeNozzle" cx="61" cy="28" r="7.5"/>
+        </svg>
+        <div class="breath-puff" id="breathPuff">
+          <span class="puff-ring r1"></span>
+          <span class="puff-ring r2"></span>
+          <span class="puff-ring r3"></span>
+        </div>
+      </div>
+
+      <h1 class="brand">PulmoPlay</h1>
+
+      <div class="deck">
+
+        <div class="side-controls side-left">
+          <div class="stepper-pill">
+            <button class="chev" id="trackPrev" type="button" aria-label="Previous backing track">&lsaquo;</button>
+            <span class="pill-icon">&#9835;</span>
+            <button class="chev" id="trackNext" type="button" aria-label="Next backing track">&rsaquo;</button>
+            <small>TRACK</small>
+          </div>
+          <button class="stepper-pill hold-pill" id="sharpPill" type="button">
+            <span class="pill-icon">&#9839;</span>
+            <small>SHARP</small>
+          </button>
+        </div>
+
+        <div class="screen" id="screen">
+          <div class="screen-row">
+            <div class="tile">
+              <span class="t-label">NOTE</span>
+              <span class="t-value" id="noteValue">&mdash;</span>
+            </div>
+            <div class="tile">
+              <span class="t-label">BREATH</span>
+              <span class="t-value breath-value" id="breathValue"><i class="breath-dot" id="breathDot"></i><span id="breathText">NORMAL</span></span>
+            </div>
+          </div>
+          <div class="screen-row">
+            <div class="tile">
+              <span class="t-label">TEMPO</span>
+              <span class="t-value" id="tempoValue">100 BPM</span>
+            </div>
+            <div class="tile">
+              <span class="t-label">VOLUME</span>
+              <span class="t-value" id="volValue">50%</span>
+              <div class="level-meter" id="levelMeter"><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+          </div>
+          <div class="screen-row track-row">
+            <span class="t-label">TRACK</span>
+            <span class="t-value track-name" id="trackValue">No Backing Track</span>
+          </div>
+        </div>
+
+        <div class="side-controls side-right">
+          <div class="stepper-pill">
+            <button class="chev" id="volDown" type="button" aria-label="Volume down">&minus;</button>
+            <svg class="pill-icon-svg" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16 8c1.5 1.2 1.5 6.8 0 8" fill="none" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <button class="chev" id="volUp" type="button" aria-label="Volume up">+</button>
+            <small>VOLUME</small>
+          </div>
+          <div class="stepper-pill">
+            <button class="chev" id="tempoDown" type="button" aria-label="Tempo down">&minus;</button>
+            <svg class="pill-icon-svg" viewBox="0 0 24 24"><path d="M7 21h10l-2-14h-6z"/><path d="M12 7V3M9 4l1.5 3M15 4l-1.5 3" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>
+            <button class="chev" id="tempoUp" type="button" aria-label="Tempo up">+</button>
+            <small>TEMPO</small>
+          </div>
+        </div>
+
+      </div>
+
+      <button class="power-btn" id="playTrackBtn" type="button" aria-label="Play or stop backing track">
+        <svg viewBox="0 0 24 24"><polygon points="3,4 3,20 12,12"/><rect x="14" y="4" width="3" height="16" rx="1"/><rect x="19" y="4" width="3" height="16" rx="1"/></svg>
+      </button>
+
+      <div class="pad-deck" id="padRow"></div>
+
+      <p class="hint">Keys: <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd> = C D E F &nbsp; <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><kbd>;</kbd> = G A B C &nbsp; hold <kbd>SPACE</kbd> for &#9839; &nbsp; <kbd>N</kbd>/<kbd>X</kbd>/<kbd>I</kbd> = normal/exhale/inhale (inhale mutes until you exhale)</p>
+    </div>
+  </section>
+
+  <section class="tab-panel" id="panel-garden" data-panel="garden" hidden>
+    <div class="garden-console">
+
+      <h1 class="brand">Breath Garden</h1>
+
+      <div class="screen" id="gardenScreen">
+        <div class="screen-row">
+          <div class="tile">
+            <span class="t-label">BREATH</span>
+            <span class="t-value breath-value" id="breathValueGarden"><i class="breath-dot" id="breathDotGarden"></i><span id="breathTextGarden">NORMAL</span></span>
+          </div>
+          <div class="tile">
+            <span class="t-label">INSPIR. TIME</span>
+            <span class="t-value" id="inspTimeValue">0.0s</span>
+          </div>
+        </div>
+        <div class="screen-row">
+          <div class="tile">
+            <span class="t-label">SCORE</span>
+            <span class="t-value" id="scoreValue">0</span>
+          </div>
+          <div class="tile">
+            <span class="t-label">BEST SCORE</span>
+            <span class="t-value" id="bestScoreValue">0</span>
+          </div>
+        </div>
+        <div class="screen-row track-row">
+          <span class="t-label">BEST INSPIR. TIME</span>
+          <span class="t-value track-name" id="bestInspValue">0.0s</span>
+        </div>
+      </div>
+
+      <div class="garden-field" id="gardenField">
+        <div class="rain-layer" id="rainLayer"></div>
+        <div class="garden-grid" id="gardenGrid"></div>
+      </div>
+
+      <p class="hint">No mouse needed &mdash; each plot is a key: <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><kbd>;</kbd>, same as the clarinet. Hold a key to plant/tend its plot (hold several to tend several at once), then hold <kbd>I</kbd> (release with <kbd>N</kbd>) to inhale &mdash; it rains on the garden and every held plot grows, just like inhaling mutes each key's clarinet note until you exhale with <kbd>X</kbd>. A longer, fuller breath grows more. Press a ripe plot's key again to harvest it and beat your best score!</p>
+    </div>
+  </section>
+
+  <button class="breath-test-btn" id="breathTestBtn" type="button">No ESP32 yet? Hold here to test inhale</button>
+
+  <p class="app-footer">Sound is synthesized live in the browser &mdash; no audio files needed. Pair your ESP32 as a Bluetooth keyboard and it plays both PulmoPlay games exactly the same way.</p>
+</main>
+
+<script src="app.js?v=5"></script>
+</body>
+</html>
