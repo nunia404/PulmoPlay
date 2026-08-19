@@ -1,14 +1,14 @@
 /* PulmoPlay — 9 button keyboard clarinet
-   8 note buttons (A S D F -> C D E F, J K L ; -> G A B C)
-   + a spacebar "sharp" button = 9 buttons total.
+   8 note buttons (A S D ArrowLeft -> C D E F, ArrowRight K L ; -> G A B C)
+   + an ArrowUp "sharp" button = 9 buttons total.
    All sound is synthesized live with the Web Audio API. */
 
 const NOTES = [
   { key: 'a', name: 'C', octave: 4, freq: 261.63 },
   { key: 's', name: 'D', octave: 4, freq: 293.66 },
   { key: 'd', name: 'E', octave: 4, freq: 329.63 },
-  { key: 'f', name: 'F', octave: 4, freq: 349.23 },
-  { key: 'j', name: 'G', octave: 4, freq: 392.00 },
+  { key: 'arrowleft', name: 'F', octave: 4, freq: 349.23 },
+  { key: 'arrowright', name: 'G', octave: 4, freq: 392.00 },
   { key: 'k', name: 'A', octave: 4, freq: 440.00 },
   { key: 'l', name: 'B', octave: 4, freq: 493.88 },
   { key: ';', name: 'C', octave: 5, freq: 523.25 },
@@ -56,10 +56,10 @@ let backingGain = null;
 const activeVoices = {}; // index -> voice, only for fingers that are currently sounding
 const fingersDown = new Set(); // indices currently held, sounding or not
 
-let isSpaceDown = false;
+let isSharpKeyDown = false;
 
 // Breath control: the ESP32 flow sensor sends one of three keys over
-// Bluetooth — "n" (normal, no airflow), "x" (expiration, breathing out),
+// Bluetooth — "n" (normal, no airflow), "ArrowDown" (expiration, breathing out),
 // "i" (inspiration, breathing in).
 //
 // The instrument mutes the moment an inhale starts and stays muted through
@@ -268,6 +268,12 @@ function stopBacking() {
 /* ---------------- Note trigger / UI wiring ---------------- */
 const noteButtons = [];
 
+const KEY_GLYPHS = { arrowleft: '←', arrowright: '→', arrowdown: '↓' };
+function keyLabel(key) {
+  if (KEY_GLYPHS[key]) return KEY_GLYPHS[key];
+  return key === ';' ? ';' : key.toUpperCase();
+}
+
 function buildButtons() {
   const padRow = document.getElementById('padRow');
 
@@ -278,7 +284,7 @@ function buildButtons() {
     btn.className = 'note-btn';
     btn.innerHTML =
       `<span class="note-name">${label}</span>` +
-      `<span class="key-label">${note.key === ';' ? ';' : note.key.toUpperCase()}</span>`;
+      `<span class="key-label">${keyLabel(note.key)}</span>`;
 
     btn.addEventListener('mousedown', () => triggerNoteOn(index));
     btn.addEventListener('mouseup', () => triggerNoteOff(index));
@@ -309,7 +315,7 @@ function triggerNoteOff(index) {
 function soundOn(index) {
   if (activeVoices[index]) return;
   const note = NOTES[index];
-  const sharp = isSpaceDown;
+  const sharp = isSharpKeyDown;
   const freq = sharp ? note.freq * SEMITONE : note.freq;
   activeVoices[index] = playClarinetNote(freq);
 
@@ -398,7 +404,7 @@ function setBreathMode(mode) {
   }
 }
 
-// ESP32 sends a discrete "n" / "x" / "i" the moment the breath state
+// ESP32 sends a discrete "n" / "ArrowDown" / "i" the moment the breath state
 // changes — the mode stays put until the next one arrives, it is not held
 // down / repeated the whole time. Both games share this same signal so
 // the same keyboard/ESP32 input drives either. The garden's rain/growth
@@ -498,8 +504,7 @@ function buildRainLayer() {
 }
 
 function plotKeyLabel(index) {
-  const key = NOTES[index].key;
-  return key === ';' ? ';' : key.toUpperCase();
+  return keyLabel(NOTES[index].key);
 }
 
 function renderGarden() {
@@ -661,10 +666,10 @@ NOTES.forEach((n, i) => { KEY_TO_INDEX[n.key] = i; });
 function setupKeyboard() {
   window.addEventListener('keydown', e => {
     const k = e.key.toLowerCase();
-    if (k === ' ') {
+    if (k === 'arrowup') {
       e.preventDefault();
-      if (!isSpaceDown) {
-        isSpaceDown = true;
+      if (!isSharpKeyDown) {
+        isSharpKeyDown = true;
         document.getElementById('sharpPill').classList.add('active');
       }
       return;
@@ -674,7 +679,7 @@ function setupKeyboard() {
       if (!e.repeat) enterNormal();
       return;
     }
-    if (k === 'x') {
+    if (k === 'arrowdown') {
       e.preventDefault();
       if (!e.repeat) enterExpiration();
       return;
@@ -698,12 +703,12 @@ function setupKeyboard() {
 
   window.addEventListener('keyup', e => {
     const k = e.key.toLowerCase();
-    if (k === ' ') {
-      isSpaceDown = false;
+    if (k === 'arrowup') {
+      isSharpKeyDown = false;
       document.getElementById('sharpPill').classList.remove('active');
       return;
     }
-    if (k === 'n' || k === 'x' || k === 'i') return; // breath mode only changes on the n / x / i keydown itself
+    if (k === 'n' || k === 'arrowdown' || k === 'i') return; // breath mode only changes on the n / arrowdown / i keydown itself
     const index = KEY_TO_INDEX[k];
     if (index === undefined) return;
     triggerNoteOff(index);
@@ -731,8 +736,8 @@ function setupBreathTestButton() {
 
 function setupSharpPill() {
   const pill = document.getElementById('sharpPill');
-  const on = e => { e.preventDefault(); isSpaceDown = true; pill.classList.add('active'); };
-  const off = () => { isSpaceDown = false; pill.classList.remove('active'); };
+  const on = e => { e.preventDefault(); isSharpKeyDown = true; pill.classList.add('active'); };
+  const off = () => { isSharpKeyDown = false; pill.classList.remove('active'); };
   pill.addEventListener('mousedown', on);
   pill.addEventListener('mouseup', off);
   pill.addEventListener('mouseleave', off);
