@@ -633,14 +633,17 @@ function advanceGardenGrowth() {
   if (seedlings.length > 0) {
     const target = pickRandom(seedlings);
     target.stage = 1;
-  } else if (sessionPlants.length < PLOT_COUNT) {
+  }
+
+  // Every completed cycle also invites a new seedling while plots remain,
+  // so the garden fills from a comfortable pattern — not longer breaths.
+  if (sessionPlants.length < PLOT_COUNT) {
     plantSeedling();
-    // Soft chance to sprout another empty plot as diversity grows
-    if (sessionPlants.length < PLOT_COUNT && Math.random() < 0.35) {
+    if (sessionPlants.length < PLOT_COUNT && Math.random() < 0.4) {
       plantSeedling();
     }
-  } else {
-    // All plots filled: gently reshuffle one plant kind for a changing mix
+  } else if (seedlings.length === 0) {
+    // All plots filled and grown: gently reshuffle one plant for a changing mix
     const idx = Math.floor(Math.random() * sessionPlants.length);
     const kind = choosePlantKind();
     sessionPlants[idx] = {
