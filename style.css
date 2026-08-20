@@ -455,6 +455,7 @@ body{
 }
 
 .garden-world{
+  position:relative;
   margin:16px 0 12px;
   border-radius:26px;
   overflow:hidden;
