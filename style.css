@@ -636,8 +636,8 @@ body{
 }
 .animals-ground{
   top:auto;
-  bottom:30px;
-  height:48px;
+  bottom:28px;
+  height:64px;
   z-index:4;
 }
 .visitor{
@@ -658,7 +658,14 @@ body{
 }
 .visitor.ground{
   animation:visitor-crawl 3.4s ease-in-out infinite;
-  font-size:1.55rem;
+  font-size:2.35rem;
+}
+.visitor.ground.visitor-snail{
+  font-size:3.1rem;
+  filter:drop-shadow(0 4px 4px rgba(0,0,0,.32));
+}
+.visitor.ground.visitor-frog{
+  font-size:2.6rem;
 }
 @keyframes visitor-fly{
   0%,100%{transform:translate(0,0);}
