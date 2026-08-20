@@ -984,69 +984,98 @@ body{
 }
 .garden-hint{margin-top:14px;}
 
+/* Soft corner breath orb inside the garden frame — mostly cropped, calm colors */
 .breath-guide{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:10px;
-  margin:14px 0 4px;
-  padding:12px 10px 8px;
+  position:absolute;
+  left:0;
+  bottom:0;
+  width:170px;
+  height:150px;
+  z-index:8;
+  pointer-events:none;
+  overflow:hidden;
 }
 .breath-guide[hidden]{display:none;}
-.guide-dot-wrap{
-  width:72px;
-  height:72px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
 .guide-dot{
-  width:28px;
-  height:28px;
+  position:absolute;
+  left:-56px;
+  bottom:-68px;
+  width:168px;
+  height:168px;
   border-radius:50%;
-  background:radial-gradient(circle at 35% 30%, #fff8e8, #7cbc6a 55%, #3f7a48);
+  background:radial-gradient(circle at 42% 38%,
+    rgba(255,255,255,.55),
+    rgba(186,220,200,.38) 42%,
+    rgba(140,180,160,.18) 68%,
+    transparent 78%);
   box-shadow:
-    0 0 0 0 rgba(124,188,106,.55),
-    0 0 18px 6px rgba(124,188,106,.45);
-  transform:scale(.55);
-  transition:background .35s ease, box-shadow .35s ease;
+    0 0 28px 8px rgba(170,210,190,.22),
+    inset 0 0 24px rgba(255,255,255,.2);
+  transform:scale(.72);
+  transform-origin:60% 40%;
+  transition:background .6s ease, box-shadow .6s ease, opacity .4s ease;
+  opacity:.85;
   will-change:transform;
 }
 .breath-guide.phase-inhale .guide-dot{
-  background:radial-gradient(circle at 35% 30%, #fff, #6ec8e8 55%, #2f7fad);
+  background:radial-gradient(circle at 42% 38%,
+    rgba(255,255,255,.6),
+    rgba(170,210,230,.42) 44%,
+    rgba(130,180,205,.2) 68%,
+    transparent 78%);
   box-shadow:
-    0 0 0 0 rgba(110,200,232,.5),
-    0 0 22px 8px rgba(110,200,232,.55);
+    0 0 32px 10px rgba(150,200,220,.24),
+    inset 0 0 24px rgba(255,255,255,.22);
+  opacity:.9;
 }
 .breath-guide.phase-hold .guide-dot{
-  background:radial-gradient(circle at 35% 30%, #fff8e8, #e0b84a 55%, #b07d22);
+  background:radial-gradient(circle at 42% 38%,
+    rgba(255,252,240,.58),
+    rgba(220,205,160,.36) 44%,
+    rgba(190,175,130,.16) 68%,
+    transparent 78%);
   box-shadow:
-    0 0 0 0 rgba(224,184,74,.5),
-    0 0 24px 10px rgba(224,184,74,.5);
-  animation:guide-hold-pulse 1.2s ease-in-out infinite;
+    0 0 30px 10px rgba(210,195,150,.2),
+    inset 0 0 22px rgba(255,255,255,.18);
+  opacity:.88;
+  animation:guide-hold-pulse 2.4s ease-in-out infinite;
 }
 .breath-guide.phase-exhale .guide-dot{
-  background:radial-gradient(circle at 35% 30%, #eef8ff, #5bb8e8 55%, #3a7a9e);
+  background:radial-gradient(circle at 42% 38%,
+    rgba(245,252,255,.52),
+    rgba(155,200,220,.34) 44%,
+    rgba(120,165,190,.16) 68%,
+    transparent 78%);
   box-shadow:
-    0 0 0 0 rgba(91,184,232,.45),
-    0 0 18px 6px rgba(91,184,232,.4);
+    0 0 28px 8px rgba(140,190,210,.2),
+    inset 0 0 20px rgba(255,255,255,.16);
+  opacity:.82;
 }
 @keyframes guide-hold-pulse{
-  0%,100%{filter:brightness(1);}
-  50%{filter:brightness(1.18);}
+  0%,100%{filter:brightness(1); opacity:.86;}
+  50%{filter:brightness(1.06); opacity:.94;}
 }
 .guide-text{
+  position:absolute;
+  left:14px;
+  bottom:14px;
   margin:0;
-  font-size:.95rem;
-  font-weight:700;
-  letter-spacing:.2px;
-  color:#2f4a38;
-  min-height:1.3em;
+  max-width:120px;
+  font-size:.78rem;
+  font-weight:650;
+  letter-spacing:.15px;
+  color:rgba(255,255,255,.92);
+  text-shadow:
+    0 1px 2px rgba(40,60,30,.45),
+    0 0 10px rgba(40,70,40,.35);
+  min-height:1.2em;
+  z-index:2;
 }
 .guide-text .guide-count{
   display:inline-block;
-  min-width:1.1em;
-  color:#1f6b3a;
+  min-width:0.9em;
+  color:rgba(255,255,245,.98);
+  font-weight:750;
 }
 
 .collection-strip{

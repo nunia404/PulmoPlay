@@ -604,11 +604,11 @@ function updateGuideUI(progress01) {
   const verb = guidePhase === 'inhale' ? 'Inhale' : guidePhase === 'hold' ? 'Hold' : 'Exhale';
   text.innerHTML = `${verb} for <span class="guide-count">${count}</span>`;
 
-  // Dot gently grows on inhale, holds large, shrinks on exhale.
+  // Soft corner orb gently swells on inhale, rests large on hold, eases on exhale.
   let scale = 1;
-  if (guidePhase === 'inhale') scale = 0.5 + progress01 * 0.9;
-  else if (guidePhase === 'hold') scale = 1.4;
-  else scale = 1.4 - progress01 * 0.9;
+  if (guidePhase === 'inhale') scale = 0.72 + progress01 * 0.38;
+  else if (guidePhase === 'hold') scale = 1.1;
+  else scale = 1.1 - progress01 * 0.38;
   dot.style.transform = `scale(${scale.toFixed(3)})`;
 }
 
