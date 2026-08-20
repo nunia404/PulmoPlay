@@ -868,7 +868,7 @@ function spawnAnimals() {
   if (!layer) return;
 
   const el = document.createElement('span');
-  el.className = `visitor ${flies ? 'air' : 'ground'}`;
+  el.className = `visitor ${flies ? 'air' : 'ground'} visitor-${visitor.id}`;
   el.textContent = visitor.emoji;
   el.title = visitor.name;
   if (flies) {
@@ -876,7 +876,7 @@ function spawnAnimals() {
     el.style.top = `${14 + Math.random() * 28}%`;
   } else {
     el.style.left = `${18 + Math.random() * 55}%`;
-    el.style.bottom = '2px';
+    el.style.bottom = '0';
   }
   layer.appendChild(el);
   requestAnimationFrame(() => el.classList.add('show'));
