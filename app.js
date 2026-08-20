@@ -522,13 +522,14 @@ function buildRainLayer() {
   const layer = document.getElementById('rainLayer');
   if (!layer) return;
   layer.innerHTML = '';
-  const DROP_COUNT = 28;
+  const DROP_COUNT = 22;
   for (let i = 0; i < DROP_COUNT; i++) {
     const drop = document.createElement('span');
     drop.className = 'raindrop';
-    drop.style.left = `${(Math.random() * 100).toFixed(1)}%`;
-    drop.style.animationDelay = `${(Math.random() * 0.9).toFixed(2)}s`;
-    drop.style.animationDuration = `${(0.7 + Math.random() * 0.5).toFixed(2)}s`;
+    // Spread across the cloud underside (not the full sky).
+    drop.style.left = `${(8 + Math.random() * 84).toFixed(1)}%`;
+    drop.style.animationDelay = `${(Math.random() * 0.85).toFixed(2)}s`;
+    drop.style.animationDuration = `${(0.65 + Math.random() * 0.45).toFixed(2)}s`;
     layer.appendChild(drop);
   }
 }
@@ -544,13 +545,14 @@ function updateCloudGardenWeather() {
   let showCloud = false;
   let showRain = false;
   if (active && guideRunning) {
-    showCloud = guidePhase === 'inhale' || guidePhase === 'hold';
+    showCloud = guidePhase === 'inhale' || guidePhase === 'hold' || guidePhase === 'exhale';
     showRain = guidePhase === 'exhale';
   } else if (active) {
     showCloud = breathMode === 'inspiration' || breathMode === 'expiration' ||
       cycleStep === 'await-hold' || cycleStep === 'await-exhale';
     showRain = breathMode === 'expiration';
   }
+  // Cloud stays on screen while raining; rain hangs from the cloud body.
   cloud.classList.toggle('visible', showCloud);
   cloud.classList.toggle('raining', showRain);
   rainLayer.classList.toggle('active', showRain);
@@ -1090,13 +1092,16 @@ function setGardenUIMode(mode) {
   const prompt = document.getElementById('gardenPrompt');
   const end = document.getElementById('gardenEnd');
   const startBtn = document.getElementById('startGardenBtn');
+  const demoBtn = document.getElementById('demoSkipBtn');
   if (mode === 'idle' || mode === 'playing' || mode === 'bonus') {
     if (prompt) prompt.hidden = false;
     if (end) end.hidden = true;
     if (startBtn) startBtn.hidden = mode !== 'idle';
+    if (demoBtn) demoBtn.hidden = mode !== 'idle';
   } else {
     if (prompt) prompt.hidden = true;
     if (end) end.hidden = false;
+    if (demoBtn) demoBtn.hidden = true;
   }
 }
 
@@ -1266,6 +1271,9 @@ function finishGarden() {
 function setupCloudGardenUI() {
   const startBtn = document.getElementById('startGardenBtn');
   if (startBtn) startBtn.addEventListener('click', startGardenSession);
+
+  const demoBtn = document.getElementById('demoSkipBtn');
+  if (demoBtn) demoBtn.addEventListener('click', runDemoVersion);
 
   const finishBtn = document.getElementById('finishGardenBtn');
   if (finishBtn) finishBtn.addEventListener('click', finishGarden);
