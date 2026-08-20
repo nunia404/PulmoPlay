@@ -989,7 +989,6 @@ body{
   font-size:.68rem;
   color:var(--ink-soft);
 }
-.garden-hint{margin-top:14px;}
 
 /* Soft corner breath orb inside the garden frame — mostly cropped, calm colors */
 .breath-guide{
