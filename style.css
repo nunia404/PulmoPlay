@@ -829,6 +829,25 @@ body{
   cursor:default;
   transform:none;
 }
+.demo-skip-btn{
+  display:block;
+  margin:10px auto 0;
+  padding:4px 10px;
+  border:1px dashed rgba(80,70,50,.35);
+  border-radius:8px;
+  background:transparent;
+  color:rgba(90,75,50,.55);
+  font-family:inherit;
+  font-size:.65rem;
+  font-weight:600;
+  letter-spacing:.3px;
+  cursor:pointer;
+}
+.demo-skip-btn:hover{
+  color:rgba(90,75,50,.85);
+  border-color:rgba(80,70,50,.55);
+}
+.demo-skip-btn[hidden]{display:none;}
 
 .garden-end{
   margin-top:8px;

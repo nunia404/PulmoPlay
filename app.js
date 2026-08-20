@@ -522,7 +522,7 @@ function buildRainLayer() {
   const layer = document.getElementById('rainLayer');
   if (!layer) return;
   layer.innerHTML = '';
-  const DROP_COUNT = 18;
+  const DROP_COUNT = 28;
   for (let i = 0; i < DROP_COUNT; i++) {
     const drop = document.createElement('span');
     drop.className = 'raindrop';
@@ -1156,11 +1156,43 @@ function startGardenSession() {
     prompt.textContent = 'Follow the glowing guide — inhale 4, hold 4, exhale 8.';
   }
   setGardenUIMode('playing');
+  const demoBtn = document.getElementById('demoSkipBtn');
+  if (demoBtn) demoBtn.hidden = true;
   plantSeedling();
   startBreathGuide();
   updateSessionHud();
   updateCloudGardenWeather();
   sessionTimerRAF = requestAnimationFrame(tickSession);
+}
+
+// Staff/demo only: jump to the last few seconds so demos do not wait a full minute.
+const DEMO_REMAINING_MS = 4_000;
+function runDemoVersion() {
+  if (gardenPhase === 'playing') {
+    sessionStartedAt = performance.now() - (SESSION_MS - DEMO_REMAINING_MS);
+    spawnAnimals();
+    updateSessionHud();
+    return;
+  }
+  if (gardenPhase !== 'idle' && gardenPhase !== 'done') return;
+
+  startGardenSession();
+  // Seed a fuller garden so the demo ending looks lived-in.
+  for (let i = 0; i < 5; i++) {
+    if (sessionPlants.length < PLOT_COUNT) plantSeedling();
+  }
+  sessionPlants.forEach(p => {
+    p.stage = 1;
+    p.emoji = pickRandom(PLANT_KINDS[p.kind].emoji);
+    p.scale = 1.15 + Math.random() * 0.35;
+  });
+  completedCycles = 3;
+  renderPlants();
+  sessionStartedAt = performance.now() - (SESSION_MS - DEMO_REMAINING_MS);
+  spawnAnimals();
+  updateSessionHud();
+  const prompt = document.getElementById('promptText');
+  if (prompt) prompt.textContent = 'Demo version — last 4 seconds (not for patients).';
 }
 
 function endSession() {
