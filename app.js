@@ -482,7 +482,7 @@ let gardenPhase = 'idle'; // idle | playing | complete | bonus | done
 let sessionStartedAt = 0;
 let sessionTimerRAF = null;
 let sessionPlants = []; // { kind, emoji, stage } stage 0=seedling 1=grown
-let cycleStep = 'await-inhale'; // await-inhale | await-exhale | await-pause
+let cycleStep = 'await-inhale'; // await-inhale | await-hold | await-exhale
 let completedCycles = 0;
 let restCount = 0;
 let stateTimings = []; // { state, atMs, durationMs }
@@ -498,6 +498,20 @@ let sessionBiome = BIOMES[0];
 let visitCount = parseInt(localStorage.getItem('pulmoplay.gardenVisits') || '0', 10);
 let cardCollection = loadJson('pulmoplay.animalCards', {});
 let sessionLogs = loadJson('pulmoplay.sessionLogs', []);
+
+// Gentle coach: inhale 4 → hold 4 → exhale 8
+const GUIDE_STEPS = [
+  { phase: 'inhale', label: 'Inhale', seconds: 4 },
+  { phase: 'hold', label: 'Hold', seconds: 4 },
+  { phase: 'exhale', label: 'Exhale', seconds: 8 },
+];
+let guideRunning = false;
+let guideStepIndex = 0;
+let guidePhase = 'inhale';
+let guideSecondsLeft = 4;
+let guidePhaseStartedAt = 0;
+let guideRAF = null;
+let guideCompleteCycles = 0; // guided loops finished this session
 
 function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -524,10 +538,21 @@ function updateCloudGardenWeather() {
   if (!cloud || !rainLayer) return;
 
   const active = gardenPhase === 'playing' || gardenPhase === 'bonus';
-  // Summon on inhale, rain on exhale. No force/duration scaling — presence only.
-  cloud.classList.toggle('visible', active && (breathMode === 'inspiration' || breathMode === 'expiration'));
-  cloud.classList.toggle('raining', active && breathMode === 'expiration');
-  rainLayer.classList.toggle('active', active && breathMode === 'expiration');
+  // Prefer the gentle guide phase for weather while a session runs, so the
+  // garden matches inhale → hold → exhale. Fall back to live breath otherwise.
+  let showCloud = false;
+  let showRain = false;
+  if (active && guideRunning) {
+    showCloud = guidePhase === 'inhale' || guidePhase === 'hold';
+    showRain = guidePhase === 'exhale';
+  } else if (active) {
+    showCloud = breathMode === 'inspiration' || breathMode === 'expiration' ||
+      cycleStep === 'await-hold' || cycleStep === 'await-exhale';
+    showRain = breathMode === 'expiration';
+  }
+  cloud.classList.toggle('visible', showCloud);
+  cloud.classList.toggle('raining', showRain);
+  rainLayer.classList.toggle('active', showRain);
 }
 
 function formatTimeLeft(ms) {
@@ -548,22 +573,112 @@ function updateSessionHud() {
   if (gardenPhase === 'playing') {
     const left = SESSION_MS - (performance.now() - sessionStartedAt);
     if (timeEl) timeEl.textContent = formatTimeLeft(left);
-    if (hintEl) {
-      if (cycleStep === 'await-inhale') hintEl.textContent = 'Inhale · summons a cloud';
-      else if (cycleStep === 'await-exhale') hintEl.textContent = 'Exhale · makes it rain';
-      else hintEl.textContent = 'Pause · water soaks in';
-    }
+    if (hintEl) hintEl.textContent = 'Inhale 4 · Hold 4 · Exhale 8';
   } else if (gardenPhase === 'bonus') {
     if (timeEl) timeEl.textContent = 'Bonus';
-    if (hintEl) {
-      if (bonusStep === 'await-inhale') hintEl.textContent = 'Bonus inhale · gather wind';
-      else if (bonusStep === 'await-exhale') hintEl.textContent = 'Bonus exhale · carry seeds';
-      else hintEl.textContent = 'Bonus pause · seeds settle';
-    }
+    if (hintEl) hintEl.textContent = 'Bonus: Inhale 4 · Hold 4 · Exhale 8';
   } else if (gardenPhase === 'idle') {
     if (timeEl) timeEl.textContent = '1:00';
-    if (hintEl) hintEl.textContent = 'Inhale · Exhale · Pause';
+    if (hintEl) hintEl.textContent = 'Inhale 4 · Hold 4 · Exhale 8';
   }
+}
+
+function setGuideVisible(visible) {
+  const guide = document.getElementById('breathGuide');
+  if (guide) guide.hidden = !visible;
+}
+
+function updateGuideUI(progress01) {
+  const guide = document.getElementById('breathGuide');
+  const dot = document.getElementById('guideDot');
+  const text = document.getElementById('guideText');
+  if (!guide || !dot || !text) return;
+
+  guide.classList.remove('phase-inhale', 'phase-hold', 'phase-exhale');
+  guide.classList.add(`phase-${guidePhase}`);
+
+  const count = Math.max(1, guideSecondsLeft);
+  const verb = guidePhase === 'inhale' ? 'Inhale' : guidePhase === 'hold' ? 'Hold' : 'Exhale';
+  text.innerHTML = `${verb} for <span class="guide-count">${count}</span>`;
+
+  // Dot gently grows on inhale, holds large, shrinks on exhale.
+  let scale = 1;
+  if (guidePhase === 'inhale') scale = 0.5 + progress01 * 0.9;
+  else if (guidePhase === 'hold') scale = 1.4;
+  else scale = 1.4 - progress01 * 0.9;
+  dot.style.transform = `scale(${scale.toFixed(3)})`;
+}
+
+function stopBreathGuide() {
+  guideRunning = false;
+  if (guideRAF) {
+    cancelAnimationFrame(guideRAF);
+    guideRAF = null;
+  }
+  setGuideVisible(false);
+}
+
+function startBreathGuide() {
+  stopBreathGuide();
+  guideRunning = true;
+  guideStepIndex = 0;
+  guideCompleteCycles = 0;
+  const step = GUIDE_STEPS[0];
+  guidePhase = step.phase;
+  guideSecondsLeft = step.seconds;
+  guidePhaseStartedAt = performance.now();
+  setGuideVisible(true);
+  updateGuideUI(0);
+  updateCloudGardenWeather();
+  guideRAF = requestAnimationFrame(tickBreathGuide);
+}
+
+function tickBreathGuide() {
+  if (!guideRunning) return;
+  if (gardenPhase !== 'playing' && gardenPhase !== 'bonus') {
+    stopBreathGuide();
+    return;
+  }
+
+  const step = GUIDE_STEPS[guideStepIndex];
+  const elapsed = (performance.now() - guidePhaseStartedAt) / 1000;
+  const progress = Math.min(1, elapsed / step.seconds);
+  const left = Math.max(1, Math.ceil(step.seconds - elapsed));
+  if (left !== guideSecondsLeft) {
+    guideSecondsLeft = left;
+  }
+  updateGuideUI(progress);
+
+  if (elapsed >= step.seconds) {
+    const finishedPhase = guidePhase;
+    guideStepIndex = (guideStepIndex + 1) % GUIDE_STEPS.length;
+    const next = GUIDE_STEPS[guideStepIndex];
+    guidePhase = next.phase;
+    guideSecondsLeft = next.seconds;
+    guidePhaseStartedAt = performance.now();
+
+    // Completing exhale closes one guided cycle: grow the garden gently.
+    if (finishedPhase === 'exhale') {
+      guideCompleteCycles += 1;
+      completedCycles += 1;
+      if (sessionPlants.length === 0) plantSeedling();
+      advanceGardenGrowth();
+      cycleStep = 'await-inhale';
+      if (gardenPhase === 'bonus') {
+        playWindSeeds();
+        settleNeighbourSeeds();
+        finishBonus();
+        stopBreathGuide();
+        updateSessionHud();
+        return;
+      }
+      updateSessionHud();
+    }
+    updateCloudGardenWeather();
+    updateGuideUI(0);
+  }
+
+  guideRAF = requestAnimationFrame(tickBreathGuide);
 }
 
 function renderPlants() {
@@ -819,39 +934,35 @@ function updateSessionNote() {
 function onGardenBreathChange(previous, mode) {
   if (gardenPhase !== 'playing' && gardenPhase !== 'bonus') return;
 
-  if (gardenPhase === 'playing') {
-    recordStateDuration(mode === 'normal' ? 'pause' : mode === 'inspiration' ? 'inhale' : 'exhale');
+  recordStateDuration(mode === 'normal' ? 'hold' : mode === 'inspiration' ? 'inhale' : 'exhale');
 
-    if (mode === 'normal' && previous !== 'normal') {
-      // A return to pause/rest after any breath effort counts as a rest.
-      if (previous === 'inspiration' || previous === 'expiration') {
-        restCount += 1;
-      }
+  if (mode === 'normal' && previous !== 'normal') {
+    // Returning to hold/pause after inhale or exhale counts as a rest.
+    if (previous === 'inspiration' || previous === 'expiration') {
+      restCount += 1;
     }
-
-    if (cycleStep === 'await-inhale' && mode === 'inspiration') {
-      cycleStep = 'await-exhale';
-      if (sessionPlants.length === 0) plantSeedling();
-    } else if (cycleStep === 'await-exhale' && mode === 'expiration') {
-      cycleStep = 'await-pause';
-    } else if (cycleStep === 'await-pause' && mode === 'normal') {
-      completedCycles += 1;
-      advanceGardenGrowth();
-      cycleStep = 'await-inhale';
-    }
-    updateSessionHud();
-    return;
   }
 
-  // Bonus: one approved cycle sends wind + neighbour plants. Same core reward either way.
-  if (bonusStep === 'await-inhale' && mode === 'inspiration') {
-    bonusStep = 'await-exhale';
-  } else if (bonusStep === 'await-exhale' && mode === 'expiration') {
-    bonusStep = 'await-pause';
-    playWindSeeds();
-  } else if (bonusStep === 'await-pause' && mode === 'normal') {
-    settleNeighbourSeeds();
-    finishBonus();
+  // Sensor still tracks the same gentle pattern the guide coaches:
+  // inhale → hold → exhale. Growth is driven by the guide clock so timing
+  // stays comfortable; breath changes are recorded for the session log.
+  if (gardenPhase === 'playing') {
+    if (cycleStep === 'await-inhale' && mode === 'inspiration') {
+      cycleStep = 'await-hold';
+      if (sessionPlants.length === 0) plantSeedling();
+    } else if (cycleStep === 'await-hold' && mode === 'normal') {
+      cycleStep = 'await-exhale';
+    } else if (cycleStep === 'await-exhale' && mode === 'expiration') {
+      cycleStep = 'await-inhale';
+    }
+  } else if (gardenPhase === 'bonus') {
+    if (bonusStep === 'await-inhale' && mode === 'inspiration') {
+      bonusStep = 'await-hold';
+    } else if (bonusStep === 'await-hold' && mode === 'normal') {
+      bonusStep = 'await-exhale';
+    } else if (bonusStep === 'await-exhale' && mode === 'expiration') {
+      bonusStep = 'await-inhale';
+    }
   }
   updateSessionHud();
 }
@@ -899,14 +1010,16 @@ function settleNeighbourSeeds() {
 function finishBonus() {
   bonusUsed = true;
   gardenPhase = 'done';
+  stopBreathGuide();
   const hint = document.getElementById('bonusHint');
-  if (hint) hint.textContent = 'Seeds settled next door. Your animal cards stay the same.';
+  if (hint) hint.textContent = 'Seeds settled next door. Your animal card stays the same.';
   const bonusBtn = document.getElementById('bonusGardenBtn');
   if (bonusBtn) bonusBtn.disabled = true;
   const prompt = document.getElementById('promptText');
   if (prompt) prompt.textContent = 'Bonus complete — soft wind, new neighbour plants.';
   persistSessionLog(true);
   updateSessionHud();
+  updateCloudGardenWeather();
 }
 
 function tickSession() {
@@ -939,6 +1052,7 @@ function setGardenUIMode(mode) {
 }
 
 function resetGardenWorld() {
+  stopBreathGuide();
   sessionPlants = [];
   neighbourPlants = [];
   completedCycles = 0;
@@ -953,6 +1067,7 @@ function resetGardenWorld() {
   bonusStep = null;
   cycleStep = 'await-inhale';
   sessionBiome = BIOMES[0];
+  guideCompleteCycles = 0;
 
   const sky = document.getElementById('sky');
   const animals = document.getElementById('animalsLayer');
@@ -980,17 +1095,18 @@ function startGardenSession() {
   gardenPhase = 'playing';
   sessionStartedAt = performance.now();
   stateEnteredAt = sessionStartedAt;
-  stateTimings.push({ state: breathMode === 'normal' ? 'pause' : breathMode === 'inspiration' ? 'inhale' : 'exhale', atMs: 0, durationMs: null });
+  stateTimings.push({ state: breathMode === 'normal' ? 'hold' : breathMode === 'inspiration' ? 'inhale' : 'exhale', atMs: 0, durationMs: null });
 
   visitCount += 1;
   localStorage.setItem('pulmoplay.gardenVisits', String(visitCount));
 
   const prompt = document.getElementById('promptText');
   if (prompt) {
-    prompt.textContent = 'Inhale for a cloud, exhale for rain, pause so the garden can drink.';
+    prompt.textContent = 'Follow the glowing guide — inhale 4, hold 4, exhale 8.';
   }
   setGardenUIMode('playing');
   plantSeedling();
+  startBreathGuide();
   updateSessionHud();
   updateCloudGardenWeather();
   sessionTimerRAF = requestAnimationFrame(tickSession);
@@ -999,6 +1115,7 @@ function startGardenSession() {
 function endSession() {
   if (sessionTimerRAF) cancelAnimationFrame(sessionTimerRAF);
   sessionTimerRAF = null;
+  stopBreathGuide();
   recordStateDuration('end');
   gardenPhase = 'complete';
 
@@ -1010,13 +1127,13 @@ function endSession() {
   persistSessionLog(false);
 
   const prompt = document.getElementById('promptText');
-  if (prompt) prompt.textContent = 'Minute complete — keep your cards, or try the optional wind bonus.';
+  if (prompt) prompt.textContent = 'Minute complete — keep your card, or try the optional wind bonus.';
 
   const bonusBtn = document.getElementById('bonusGardenBtn');
   if (bonusBtn) bonusBtn.disabled = false;
   const hint = document.getElementById('bonusHint');
   if (hint) {
-    hint.textContent = 'Optional: one more approved breath cycle sends wind carrying seeds to a neighbouring plot. Same core reward either way.';
+    hint.textContent = 'Optional: one more guided breath cycle sends wind carrying seeds to a neighbouring plot. Same core reward either way.';
   }
 
   setGardenUIMode('complete');

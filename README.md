@@ -47,13 +47,13 @@ Since it's static files, deploy by copying `index.html`, `app.js`, and `style.cs
 
 **Cloud Garden tab**
 
-A one-minute session. Breathing creates weather that grows a magical garden:
+A one-minute session. Breathing creates weather that grows a magical garden. A glowing guide coaches **inhale 4 · hold 4 · exhale 8**:
 
 | Breath state | Weather |
 |---|---|
-| Inhale (`I`) | Summons a cloud |
-| Exhale (`↓`) | Makes the cloud rain |
-| Pause (`N`) | Water soaks in and plants grow |
+| Inhale (`I`, 4s) | Summons a cloud |
+| Hold (`N`, 4s) | Cloud rests |
+| Exhale (`↓`, 8s) | Makes the cloud rain |
 
 Across the minute, seedlings become a changing mix of flowers, ferns, mushrooms, and vines. In the final 10 seconds, **one animal** (such as a bee, butterfly, frog, or bird) visits. After the session the child collects **that animal’s card** — rarity comes from garden biome, plant mix, repeat visits, and gentle randomness, **not** breathing force or session length.
 

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PulmoPlay - 9 Button Clarinet</title>
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 
@@ -131,7 +131,7 @@
         </div>
         <div class="screen-row track-row">
           <span class="t-label">PATTERN</span>
-          <span class="t-value track-name" id="patternHint">Inhale · Exhale · Pause</span>
+          <span class="t-value track-name" id="patternHint">Inhale 4 · Hold 4 · Exhale 8</span>
         </div>
       </div>
 
@@ -157,8 +157,15 @@
       </div>
 
       <div class="garden-prompt" id="gardenPrompt">
-        <p class="prompt-text" id="promptText">Breathe gently. Inhale summons a cloud, exhale makes it rain, pause lets plants grow.</p>
+        <p class="prompt-text" id="promptText">Breathe gently. Inhale summons a cloud, hold lets it rest, exhale makes it rain.</p>
         <button class="garden-cta" id="startGardenBtn" type="button">Start 1-minute garden</button>
+      </div>
+
+      <div class="breath-guide" id="breathGuide" hidden aria-live="polite">
+        <div class="guide-dot-wrap">
+          <span class="guide-dot" id="guideDot" aria-hidden="true"></span>
+        </div>
+        <p class="guide-text" id="guideText">Inhale for 4</p>
       </div>
 
       <div class="garden-end" id="gardenEnd" hidden>
@@ -188,7 +195,7 @@
         <div class="collection-cards" id="collectionCards"></div>
       </div>
 
-      <p class="hint garden-hint">Cloud Garden only notices three breath states — <kbd>I</kbd> inhale, <kbd>&darr;</kbd> exhale, <kbd>N</kbd> pause — so a comfortable pattern and rests are what matter. Soft weather grows the garden; nothing here measures lung capacity, strength, or how hard you blow.</p>
+      <p class="hint garden-hint">Follow the glowing guide: inhale 4, hold 4, exhale 8. Cloud Garden only notices three breath states — <kbd>I</kbd> inhale, <kbd>N</kbd> hold/pause, <kbd>&darr;</kbd> exhale — so a comfortable pattern and rests are what matter. Soft weather grows the garden; nothing here measures lung capacity, strength, or how hard you blow.</p>
     </div>
   </section>
 
@@ -197,6 +204,6 @@
   <p class="app-footer">Sound is synthesized live in the browser &mdash; no audio files needed. Pair your ESP32 as a Bluetooth keyboard and it plays both PulmoPlay games exactly the same way.</p>
 </main>
 
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>

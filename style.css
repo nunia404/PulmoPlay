@@ -812,6 +812,71 @@ body{
 }
 .garden-hint{margin-top:14px;}
 
+.breath-guide{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  margin:14px 0 4px;
+  padding:12px 10px 8px;
+}
+.breath-guide[hidden]{display:none;}
+.guide-dot-wrap{
+  width:72px;
+  height:72px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.guide-dot{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #fff8e8, #7cbc6a 55%, #3f7a48);
+  box-shadow:
+    0 0 0 0 rgba(124,188,106,.55),
+    0 0 18px 6px rgba(124,188,106,.45);
+  transform:scale(.55);
+  transition:background .35s ease, box-shadow .35s ease;
+  will-change:transform;
+}
+.breath-guide.phase-inhale .guide-dot{
+  background:radial-gradient(circle at 35% 30%, #fff, #6ec8e8 55%, #2f7fad);
+  box-shadow:
+    0 0 0 0 rgba(110,200,232,.5),
+    0 0 22px 8px rgba(110,200,232,.55);
+}
+.breath-guide.phase-hold .guide-dot{
+  background:radial-gradient(circle at 35% 30%, #fff8e8, #e0b84a 55%, #b07d22);
+  box-shadow:
+    0 0 0 0 rgba(224,184,74,.5),
+    0 0 24px 10px rgba(224,184,74,.5);
+  animation:guide-hold-pulse 1.2s ease-in-out infinite;
+}
+.breath-guide.phase-exhale .guide-dot{
+  background:radial-gradient(circle at 35% 30%, #eef8ff, #5bb8e8 55%, #3a7a9e);
+  box-shadow:
+    0 0 0 0 rgba(91,184,232,.45),
+    0 0 18px 6px rgba(91,184,232,.4);
+}
+@keyframes guide-hold-pulse{
+  0%,100%{filter:brightness(1);}
+  50%{filter:brightness(1.18);}
+}
+.guide-text{
+  margin:0;
+  font-size:.95rem;
+  font-weight:700;
+  letter-spacing:.2px;
+  color:#2f4a38;
+  min-height:1.3em;
+}
+.guide-text .guide-count{
+  display:inline-block;
+  min-width:1.1em;
+  color:#1f6b3a;
+}
+
 .collection-strip{
   margin-top:14px;
   padding-top:12px;
