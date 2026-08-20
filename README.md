@@ -1,6 +1,6 @@
 # PulmoPlay
 
-A 9-button keyboard clarinet in the browser, plus **Cloud Garden** — a one-minute breathing game for children. Sound is synthesized live with the Web Audio API — no audio files, no build step, no dependencies. It also supports breath input from an ESP32 flow sensor connected over Bluetooth (the ESP32 sends normal keystrokes, so the browser can't tell it apart from a person pressing keys).
+A 9-button keyboard clarinet in the browser, plus **Cloud Garden** and **Melody Lanes**. Sound is synthesized live with the Web Audio API — no audio files, no build step, no dependencies. It also supports breath input from an ESP32 flow sensor connected over Bluetooth (the ESP32 sends normal keystrokes, so the browser can't tell it apart from a person pressing keys).
 
 ## Requirements
 
@@ -60,6 +60,10 @@ Across the minute, seedlings become a changing mix of flowers, ferns, mushrooms,
 When the minute ends, they can keep the same core reward and finish, or try an optional bonus: one more approved breath cycle sends wind carrying seeds to a neighbouring plot.
 
 Cloud Garden only detects three states — inhale, pause, exhale — so it rewards a comfortable pattern and rests. It records timing, completed cycles, rests, and an optional comfort rating. It does **not** claim to measure lung capacity, strength, or cough effectiveness.
+
+**Melody Lanes tab**
+
+Colored bars fall down eight lanes toward a glowing **baseline**. Press the matching clarinet key (`A S D ← → K L ;`) when a bar reaches the line to score a hit. Missed bars that fall past the baseline count as misses. A short timed run tracks score, combo, hits, and misses.
 
 ## ESP32 / Bluetooth breath sensor (optional)
 
