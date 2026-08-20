@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PulmoPlay - 9 Button Clarinet</title>
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 
@@ -12,7 +12,7 @@
 
   <div class="tabbar" role="tablist">
     <button class="tab-btn active" id="tabClarinetBtn" type="button" data-tab="clarinet" role="tab" aria-selected="true">&#9835; Clarinet</button>
-    <button class="tab-btn" id="tabGardenBtn" type="button" data-tab="garden" role="tab" aria-selected="false">&#127793; Breath Garden</button>
+    <button class="tab-btn" id="tabGardenBtn" type="button" data-tab="garden" role="tab" aria-selected="false">&#9729; Cloud Garden</button>
   </div>
 
   <section class="tab-panel" id="panel-clarinet" data-panel="clarinet">
@@ -105,41 +105,90 @@
   <section class="tab-panel" id="panel-garden" data-panel="garden" hidden>
     <div class="garden-console">
 
-      <h1 class="brand">Breath Garden</h1>
+      <h1 class="brand brand-garden">Cloud Garden</h1>
+      <p class="garden-tagline">One minute of gentle weather for a magical garden</p>
 
       <div class="screen" id="gardenScreen">
         <div class="screen-row">
           <div class="tile">
             <span class="t-label">BREATH</span>
-            <span class="t-value breath-value" id="breathValueGarden"><i class="breath-dot" id="breathDotGarden"></i><span id="breathTextGarden">NORMAL</span></span>
+            <span class="t-value breath-value" id="breathValueGarden"><i class="breath-dot" id="breathDotGarden"></i><span id="breathTextGarden">PAUSE</span></span>
           </div>
           <div class="tile">
-            <span class="t-label">INSPIR. TIME</span>
-            <span class="t-value" id="inspTimeValue">0.0s</span>
+            <span class="t-label">TIME LEFT</span>
+            <span class="t-value" id="sessionTimeValue">1:00</span>
           </div>
         </div>
         <div class="screen-row">
           <div class="tile">
-            <span class="t-label">SCORE</span>
-            <span class="t-value" id="scoreValue">0</span>
+            <span class="t-label">CYCLES</span>
+            <span class="t-value" id="cycleValue">0</span>
           </div>
           <div class="tile">
-            <span class="t-label">BEST SCORE</span>
-            <span class="t-value" id="bestScoreValue">0</span>
+            <span class="t-label">RESTS</span>
+            <span class="t-value" id="restValue">0</span>
           </div>
         </div>
         <div class="screen-row track-row">
-          <span class="t-label">BEST INSPIR. TIME</span>
-          <span class="t-value track-name" id="bestInspValue">0.0s</span>
+          <span class="t-label">PATTERN</span>
+          <span class="t-value track-name" id="patternHint">Inhale · Exhale · Pause</span>
         </div>
       </div>
 
-      <div class="garden-field" id="gardenField">
-        <div class="rain-layer" id="rainLayer"></div>
-        <div class="garden-grid" id="gardenGrid"></div>
+      <div class="garden-world" id="gardenWorld">
+        <div class="sky" id="sky">
+          <div class="cloud" id="gardenCloud" aria-hidden="true">
+            <span class="cloud-puff p1"></span>
+            <span class="cloud-puff p2"></span>
+            <span class="cloud-puff p3"></span>
+          </div>
+          <div class="rain-layer" id="rainLayer"></div>
+          <div class="wind-layer" id="windLayer" aria-hidden="true"></div>
+          <div class="animals-layer" id="animalsLayer"></div>
+        </div>
+        <div class="garden-ground" id="gardenGround">
+          <div class="soil"></div>
+          <div class="garden-plots" id="gardenPlots"></div>
+          <div class="neighbour-plot" id="neighbourPlot" hidden>
+            <span class="neighbour-label">Neighbour plot</span>
+            <div class="neighbour-plants" id="neighbourPlants"></div>
+          </div>
+        </div>
       </div>
 
-      <p class="hint">No mouse needed &mdash; each plot is a key: <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>&larr;</kbd><kbd>&rarr;</kbd><kbd>K</kbd><kbd>L</kbd><kbd>;</kbd>, same as the clarinet. Hold a key to plant/tend its plot (hold several to tend several at once), then hold <kbd>I</kbd> (release with <kbd>N</kbd>) to inhale &mdash; it rains on the garden and every held plot grows, just like inhaling mutes each key's clarinet note until you exhale with <kbd>&darr;</kbd>. A longer, fuller breath grows more. Press a ripe plot's key again to harvest it and beat your best score!</p>
+      <div class="garden-prompt" id="gardenPrompt">
+        <p class="prompt-text" id="promptText">Breathe gently. Inhale summons a cloud, exhale makes it rain, pause lets plants grow.</p>
+        <button class="garden-cta" id="startGardenBtn" type="button">Start 1-minute garden</button>
+      </div>
+
+      <div class="garden-end" id="gardenEnd" hidden>
+        <h2 class="end-title">Your garden bloomed!</h2>
+        <p class="end-sub" id="endBiomeLabel">Meadow biome</p>
+        <div class="card-tray" id="cardTray" aria-live="polite"></div>
+        <div class="comfort-block" id="comfortBlock">
+          <p class="comfort-label">How did that feel? <span class="optional">(optional)</span></p>
+          <div class="comfort-row" id="comfortRow">
+            <button type="button" class="comfort-btn" data-comfort="1" aria-label="A bit hard">1</button>
+            <button type="button" class="comfort-btn" data-comfort="2" aria-label="Okay">2</button>
+            <button type="button" class="comfort-btn" data-comfort="3" aria-label="Comfortable">3</button>
+            <button type="button" class="comfort-btn" data-comfort="4" aria-label="Easy">4</button>
+            <button type="button" class="comfort-btn" data-comfort="5" aria-label="Very easy">5</button>
+          </div>
+        </div>
+        <p class="session-note" id="sessionNote"></p>
+        <div class="end-actions">
+          <button class="garden-cta" id="finishGardenBtn" type="button">Keep cards &amp; finish</button>
+          <button class="garden-cta secondary" id="bonusGardenBtn" type="button">Bonus: send seeds on the wind</button>
+        </div>
+        <p class="bonus-hint" id="bonusHint">Optional: one more breath cycle sends wind carrying seeds to a neighbouring plot.</p>
+      </div>
+
+      <div class="collection-strip" id="collectionStrip">
+        <span class="collection-label">Animal cards</span>
+        <div class="collection-cards" id="collectionCards"></div>
+      </div>
+
+      <p class="hint garden-hint">Cloud Garden only notices three breath states — <kbd>I</kbd> inhale, <kbd>&darr;</kbd> exhale, <kbd>N</kbd> pause — so a comfortable pattern and rests are what matter. Soft weather grows the garden; nothing here measures lung capacity, strength, or how hard you blow.</p>
     </div>
   </section>
 
@@ -148,6 +197,6 @@
   <p class="app-footer">Sound is synthesized live in the browser &mdash; no audio files needed. Pair your ESP32 as a Bluetooth keyboard and it plays both PulmoPlay games exactly the same way.</p>
 </main>
 
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>

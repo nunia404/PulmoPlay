@@ -273,13 +273,15 @@ body{
 }
 .breath-value.on .breath-dot{background:var(--good); box-shadow:0 0 6px var(--good);}
 .breath-value.on{color:var(--good);}
-.breath-value.on #breathText{color:var(--good);}
+.breath-value.on #breathText,
+.breath-value.on #breathTextGarden{color:var(--good);}
 
 /* Inhaling mutes the instrument — flagged in red so it reads as distinct
    from the green "exhaling" state rather than just "not on". */
 .breath-value.muted .breath-dot{background:var(--bad); box-shadow:0 0 6px var(--bad);}
 .breath-value.muted{color:var(--bad);}
-.breath-value.muted #breathText{color:var(--bad);}
+.breath-value.muted #breathText,
+.breath-value.muted #breathTextGarden{color:var(--bad);}
 
 .level-meter{
   display:flex;
@@ -421,33 +423,92 @@ body{
   border-color:var(--cyan);
 }
 
-/* ---------------- Breath Garden ---------------- */
+/* ---------------- Cloud Garden ---------------- */
 .garden-console{
   position:relative;
   width:100%;
-  background:linear-gradient(165deg, #f7efe2, var(--cream) 45%, var(--cream-deep));
+  background:linear-gradient(165deg, #eef6ea, #f1e8d4 48%, #e4d4b8);
   border-radius:46px;
-  padding:26px 20px 30px;
+  padding:22px 18px 26px;
   box-shadow:
     0 24px 46px rgba(30,26,18,.35),
     0 3px 0 var(--cream-shadow) inset,
     0 -10px 22px rgba(120,100,70,.18) inset;
 }
 
-.garden-field{
-  position:relative;
-  margin:18px 0 10px;
+.brand-garden{
+  margin-bottom:4px;
+  font-size:1.35rem;
+  letter-spacing:.8px;
+  color:#2f4a38;
 }
+
+.garden-tagline{
+  margin:0 0 14px;
+  text-align:center;
+  font-size:.78rem;
+  color:var(--ink-soft);
+}
+
+.garden-world{
+  margin:16px 0 12px;
+  border-radius:24px;
+  overflow:hidden;
+  box-shadow:0 6px 0 rgba(0,0,0,.12), 0 10px 18px rgba(0,0,0,.18);
+}
+
+.sky{
+  position:relative;
+  height:148px;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(255,255,255,.55), transparent 42%),
+    linear-gradient(180deg, #8ec7ef 0%, #b7ddf2 55%, #d9eec8 100%);
+  overflow:hidden;
+}
+
+.sky.phase-animals{
+  background:
+    radial-gradient(circle at 80% 18%, rgba(255,236,170,.55), transparent 35%),
+    linear-gradient(180deg, #7bb8e8 0%, #a8d4ef 50%, #cfe9b8 100%);
+}
+
+.cloud{
+  position:absolute;
+  top:28px;
+  left:50%;
+  width:110px;
+  height:48px;
+  transform:translateX(-50%) scale(.2);
+  opacity:0;
+  transition:transform .55s ease, opacity .4s ease;
+  z-index:2;
+  pointer-events:none;
+}
+.cloud.visible{
+  opacity:1;
+  transform:translateX(-50%) scale(1);
+}
+.cloud.raining .cloud-puff{
+  filter:brightness(.92);
+}
+.cloud-puff{
+  position:absolute;
+  background:#f7fbff;
+  border-radius:50%;
+  box-shadow:0 4px 10px rgba(40,70,100,.18);
+}
+.cloud-puff.p1{width:58px;height:42px;left:26px;top:8px;}
+.cloud-puff.p2{width:42px;height:36px;left:8px;top:14px;}
+.cloud-puff.p3{width:46px;height:38px;left:58px;top:12px;}
 
 .rain-layer{
   position:absolute;
-  inset:-14px -6px -6px;
+  inset:0;
   overflow:hidden;
-  border-radius:22px;
   pointer-events:none;
   opacity:0;
   transition:opacity .35s ease;
-  z-index:2;
+  z-index:3;
 }
 .rain-layer.active{opacity:1;}
 
@@ -455,110 +516,311 @@ body{
   position:absolute;
   top:-10%;
   width:2px;
-  height:16px;
+  height:14px;
   border-radius:2px;
-  background:linear-gradient(180deg, rgba(91,224,242,0), var(--cyan) 65%, rgba(91,224,242,.9));
+  background:linear-gradient(180deg, rgba(91,224,242,0), #5bb8e8 65%, rgba(91,184,232,.9));
   animation-name:raindrop-fall;
   animation-timing-function:linear;
   animation-iteration-count:infinite;
   animation-play-state:paused;
 }
 .rain-layer.active .raindrop{animation-play-state:running;}
-/* Animates "top" (a % of the rain-layer's own height) rather than a
-   transform (which resolves % against the raindrop's own tiny height) —
-   otherwise each drop only travels a few px and never crosses the plots. */
 @keyframes raindrop-fall{
   0%{top:-10%; opacity:0;}
   12%{opacity:.9;}
   100%{top:108%; opacity:0;}
 }
 
-.garden-grid{
+.wind-layer{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:0;
+  z-index:4;
+}
+.wind-layer.active{opacity:1;}
+.seed-puff{
+  position:absolute;
+  top:42%;
+  left:-8%;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:#c8e39a;
+  box-shadow:0 0 0 3px rgba(200,227,154,.35);
+  animation:seed-drift 1.8s ease-in-out forwards;
+}
+@keyframes seed-drift{
+  0%{transform:translate(0,0) scale(.6); opacity:0;}
+  20%{opacity:1;}
+  100%{transform:translate(320px,-18px) scale(1); opacity:0;}
+}
+
+.animals-layer{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:5;
+}
+.visitor{
+  position:absolute;
+  font-size:1.35rem;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.2));
+  animation:visitor-float 2.8s ease-in-out infinite;
+  opacity:0;
+  transform:translateY(8px);
+}
+.visitor.show{
+  opacity:1;
+  transform:translateY(0);
+  transition:opacity .5s ease, transform .5s ease;
+}
+@keyframes visitor-float{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-6px);}
+}
+
+.garden-ground{
   position:relative;
+  min-height:132px;
+  background:linear-gradient(180deg, #9bc56a 0%, #6f9a45 38%, #5a7d38 100%);
+  padding:10px 12px 14px;
+}
+.soil{
+  position:absolute;
+  left:0;right:0;bottom:0;
+  height:28px;
+  background:linear-gradient(180deg, #8b6239, #6e4a2a);
+  opacity:.55;
+}
+
+.garden-plots{
+  position:relative;
+  z-index:1;
   display:grid;
   grid-template-columns:repeat(4, 1fr);
-  gap:10px;
+  gap:8px;
+  min-height:88px;
 }
 
-.plot{
-  position:relative;
-  aspect-ratio:1;
-  border-radius:18px;
-  background:linear-gradient(165deg, #dcefff, #b7d9c0);
-  box-shadow:0 4px 0 rgba(0,0,0,.14), 0 6px 10px rgba(0,0,0,.2);
+.plant-slot{
   display:flex;
-  align-items:center;
+  align-items:flex-end;
   justify-content:center;
-  overflow:hidden;
-  transition:box-shadow .15s ease;
+  height:88px;
+  padding-bottom:6px;
+}
+.plant{
+  font-size:1.55rem;
+  line-height:1;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.2));
+  transform-origin:50% 100%;
+  animation:plant-sprout .55s ease;
+}
+.plant.soak{
+  animation:plant-soak .7s ease;
+}
+@keyframes plant-sprout{
+  0%{transform:scale(.4) translateY(10px); opacity:0;}
+  100%{transform:scale(1) translateY(0); opacity:1;}
+}
+@keyframes plant-soak{
+  0%,100%{transform:scale(1);}
+  40%{transform:scale(1.12);}
 }
 
-.plot-icon{
-  display:inline-block;
-  font-size:1.7rem;
-  filter:drop-shadow(0 2px 2px rgba(0,0,0,.2));
+.neighbour-plot{
+  position:relative;
+  z-index:1;
+  margin-top:10px;
+  padding:8px 10px;
+  border-radius:14px;
+  background:rgba(255,255,255,.18);
+  border:1px dashed rgba(255,255,255,.45);
 }
-.plot-icon.plot-empty{
-  font-size:1.4rem;
+.neighbour-label{
+  display:block;
+  font-size:.62rem;
+  font-weight:700;
+  letter-spacing:.8px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.85);
+  margin-bottom:4px;
+}
+.neighbour-plants{
+  display:flex;
+  gap:8px;
+  min-height:36px;
+  align-items:center;
+}
+.neighbour-plants .plant{font-size:1.25rem;}
+
+.garden-prompt{
+  text-align:center;
+  margin:8px 0 4px;
+}
+.prompt-text{
+  margin:0 0 12px;
+  font-size:.78rem;
+  color:var(--ink-soft);
+  line-height:1.4;
+}
+.garden-cta{
+  border:none;
+  border-radius:14px;
+  padding:11px 18px;
+  background:linear-gradient(180deg, #7cbc6a, #4f8f45);
+  color:#f4fff0;
+  font-family:inherit;
+  font-weight:700;
+  font-size:.85rem;
+  cursor:pointer;
+  box-shadow:0 3px 0 #3a6b34, 0 5px 10px rgba(0,0,0,.18);
+}
+.garden-cta:active{transform:translateY(2px); box-shadow:0 1px 0 #3a6b34, 0 2px 4px rgba(0,0,0,.18);}
+.garden-cta.secondary{
+  background:linear-gradient(180deg, #f3c98a, var(--gold));
+  color:#4a2f08;
+  box-shadow:0 3px 0 #b07d22, 0 5px 10px rgba(0,0,0,.18);
+}
+.garden-cta:disabled{
+  opacity:.45;
+  cursor:default;
+  transform:none;
+}
+
+.garden-end{
+  margin-top:8px;
+  text-align:center;
+}
+.end-title{
+  margin:0 0 4px;
+  font-size:1.05rem;
+  color:#2f4a38;
+}
+.end-sub{
+  margin:0 0 12px;
+  font-size:.78rem;
+  color:var(--ink-soft);
+}
+.card-tray{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:10px;
+  margin-bottom:14px;
+  min-height:88px;
+}
+.animal-card{
+  width:78px;
+  padding:10px 8px 8px;
+  border-radius:14px;
+  background:linear-gradient(165deg, #fffdf8, #f0e2c8);
+  box-shadow:0 4px 0 rgba(0,0,0,.12), 0 8px 14px rgba(0,0,0,.16);
+  animation:card-deal .55s ease;
+}
+.animal-card .card-emoji{font-size:1.7rem; display:block; margin-bottom:4px;}
+.animal-card .card-name{display:block; font-size:.68rem; font-weight:700; color:var(--ink);}
+.animal-card .card-rarity{
+  display:block;
+  margin-top:3px;
+  font-size:.55rem;
+  font-weight:700;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+}
+.animal-card.rarity-common .card-rarity{color:#6b7a5a;}
+.animal-card.rarity-uncommon .card-rarity{color:#3d7a5a;}
+.animal-card.rarity-rare .card-rarity{color:#3a6ea8;}
+.animal-card.rarity-legendary .card-rarity{color:#b07d22;}
+@keyframes card-deal{
+  0%{transform:translateY(16px) scale(.8); opacity:0;}
+  100%{transform:translateY(0) scale(1); opacity:1;}
+}
+
+.comfort-block{margin:4px 0 10px;}
+.comfort-label{
+  margin:0 0 8px;
+  font-size:.75rem;
+  color:var(--ink-soft);
+}
+.comfort-label .optional{opacity:.7;}
+.comfort-row{display:flex; justify-content:center; gap:6px;}
+.comfort-btn{
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  border:1px solid rgba(0,0,0,.12);
+  background:#f7f1e4;
+  font-weight:700;
+  color:var(--ink);
+  cursor:pointer;
+}
+.comfort-btn.selected{
+  background:linear-gradient(180deg, #7cbc6a, #4f8f45);
+  color:#fff;
+  border-color:transparent;
+}
+
+.session-note{
+  margin:0 0 12px;
+  font-size:.7rem;
+  color:var(--ink-soft);
+  line-height:1.35;
+}
+.end-actions{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:8px;
+  margin-bottom:8px;
+}
+.bonus-hint{
+  margin:0;
+  font-size:.68rem;
+  color:var(--ink-soft);
+}
+.garden-hint{margin-top:14px;}
+
+.collection-strip{
+  margin-top:14px;
+  padding-top:12px;
+  border-top:1px solid rgba(0,0,0,.08);
+}
+.collection-label{
+  display:block;
+  font-size:.62rem;
+  font-weight:700;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  margin-bottom:8px;
+}
+.collection-cards{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  min-height:28px;
+}
+.collection-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:4px 8px;
+  border-radius:999px;
+  background:rgba(255,255,255,.45);
+  font-size:.7rem;
+  color:var(--ink);
+}
+.collection-chip .count{
   font-weight:700;
   color:var(--ink-soft);
-  opacity:.4;
-  filter:none;
 }
-
-.plot-key{
-  position:absolute;
-  top:5px;
-  right:7px;
-  font-size:.6rem;
-  font-weight:700;
-  letter-spacing:.5px;
+.collection-empty{
+  font-size:.72rem;
   color:var(--ink-soft);
   opacity:.75;
-}
-
-.plot.held{
-  box-shadow:0 0 0 3px var(--cyan) inset, 0 4px 0 rgba(0,0,0,.14), 0 6px 10px rgba(0,0,0,.2);
-}
-
-.plot.ripe{animation:ripe-glow 1.3s ease-in-out infinite;}
-@keyframes ripe-glow{
-  0%,100%{box-shadow:0 0 0 3px transparent inset, 0 4px 0 rgba(0,0,0,.14), 0 0 0 rgba(224,168,58,0);}
-  50%{box-shadow:0 0 0 3px var(--gold) inset, 0 4px 0 rgba(0,0,0,.14), 0 0 16px 3px rgba(224,168,58,.55);}
-}
-
-.plot.watering{
-  box-shadow:0 0 0 3px var(--cyan) inset, 0 0 14px 3px rgba(91,224,242,.55), 0 4px 0 rgba(0,0,0,.14);
-}
-.plot.watering .plot-icon{animation:water-bob .6s ease-in-out infinite;}
-@keyframes water-bob{
-  0%,100%{transform:translateY(0);}
-  50%{transform:translateY(-3px) scale(1.05);}
-}
-
-.plot.stage-pop .plot-icon{animation:stage-pop-kf .45s ease;}
-@keyframes stage-pop-kf{
-  0%{transform:scale(.6) rotate(-10deg); opacity:.3;}
-  55%{transform:scale(1.3) rotate(5deg); opacity:1;}
-  100%{transform:scale(1) rotate(0);}
-}
-
-.plot-bar{
-  position:absolute;
-  left:10%;
-  right:10%;
-  bottom:9%;
-  height:5px;
-  border-radius:3px;
-  background:rgba(0,0,0,.18);
-  overflow:hidden;
-}
-.plot-bar i{
-  display:block;
-  height:100%;
-  width:0%;
-  background:var(--good);
-  transition:width .25s ease;
 }
 
 .app-footer{

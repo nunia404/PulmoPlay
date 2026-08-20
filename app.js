@@ -59,22 +59,21 @@ const fingersDown = new Set(); // indices currently held, sounding or not
 let isSharpKeyDown = false;
 
 // Breath control: the ESP32 flow sensor sends one of three keys over
-// Bluetooth — "n" (normal, no airflow), "ArrowDown" (expiration, breathing out),
-// "i" (inspiration, breathing in).
+// Bluetooth — "n" (normal / pause, no airflow), "ArrowDown" (expiration,
+// breathing out), "i" (inspiration, breathing in).
 //
 // The instrument mutes the moment an inhale starts and stays muted through
 // any "normal" in between — it only comes back once an exhale actually
 // begins. That's a latch (instrumentMuted), not a plain function of the
 // current mode, so it needs its own variable.
 //
-// The Breath Garden's rain/growth is the opposite: it runs only while
-// actively inhaling (isBlowing tracks that).
+// Cloud Garden maps the same three states to weather, never to force:
+// inhale summons a cloud, exhale rains, pause lets water soak and plants grow.
 let breathMode = 'normal'; // 'normal' | 'inspiration' | 'expiration'
-let isBlowing = false; // true only while inhaling — drives the garden rain/growth
 let instrumentMuted = false; // latched by inspiration/expiration; unaffected by 'normal'
 
-// Which tab is showing — the note keys drive the clarinet on one and the
-// garden plots on the other, so key handling needs to know which.
+// Which tab is showing — note keys still drive the clarinet; Cloud Garden
+// listens only to the three breath states (plus its own UI buttons).
 let activeTab = 'clarinet';
 
 let isPlayingBacking = false;
@@ -351,20 +350,28 @@ function updateNoteDisplay() {
 }
 
 /* ---------------- Breath control ---------------- */
-const BREATH_LABELS = { normal: 'NORMAL', inspiration: 'INHALE', expiration: 'EXHALE' };
+const BREATH_LABELS = {
+  normal: 'PAUSE',
+  inspiration: 'INHALE',
+  expiration: 'EXHALE',
+};
+const BREATH_LABELS_CLARINET = {
+  normal: 'NORMAL',
+  inspiration: 'INHALE',
+  expiration: 'EXHALE',
+};
 
 function updateBreathUI() {
   const value = document.getElementById('breathValue');
   const text = document.getElementById('breathText');
   const puff = document.getElementById('breathPuff');
   // The tile itself is an honest readout of the current sensor mode —
-  // independent of the instrument's latched mute and the garden's
-  // inhale-driven rain, both handled elsewhere.
+  // independent of the instrument's latched mute and Cloud Garden weather.
   const isExhaling = breathMode === 'expiration';
   const isInhaling = breathMode === 'inspiration';
   value.classList.toggle('on', isExhaling);
   value.classList.toggle('muted', isInhaling);
-  text.textContent = BREATH_LABELS[breathMode];
+  text.textContent = BREATH_LABELS_CLARINET[breathMode];
   puff.classList.toggle('blowing', isExhaling);
 
   const valueG = document.getElementById('breathValueGarden');
@@ -375,9 +382,7 @@ function updateBreathUI() {
     textG.textContent = BREATH_LABELS[breathMode];
   }
 
-  const rainLayer = document.getElementById('rainLayer');
-  if (rainLayer) rainLayer.classList.toggle('active', isBlowing);
-  updateWateringVisual();
+  updateCloudGardenWeather();
 }
 
 // Switches the current breath mode and reconciles everything that depends
@@ -388,8 +393,8 @@ function updateBreathUI() {
 // out the silence until they breathe out again.
 function setBreathMode(mode) {
   if (breathMode === mode) return;
+  const previous = breathMode;
   breathMode = mode;
-  isBlowing = (mode === 'inspiration'); // garden rain/growth run on the inhale, not the exhale
 
   const wasMuted = instrumentMuted;
   if (mode === 'inspiration') instrumentMuted = true;
@@ -397,6 +402,8 @@ function setBreathMode(mode) {
   // 'normal' leaves instrumentMuted exactly as it was
 
   updateBreathUI();
+  onGardenBreathChange(previous, mode);
+
   if (instrumentMuted && !wasMuted) {
     Array.from(fingersDown).forEach(i => soundOff(i));
   } else if (!instrumentMuted && wasMuted) {
@@ -406,93 +413,101 @@ function setBreathMode(mode) {
 
 // ESP32 sends a discrete "n" / "ArrowDown" / "i" the moment the breath state
 // changes — the mode stays put until the next one arrives, it is not held
-// down / repeated the whole time. Both games share this same signal so
-// the same keyboard/ESP32 input drives either. The garden's rain/growth
-// timer runs only during inspiration — it rains while you breathe in.
-let breathStartTime = null;
-let lastGrowthFrameTime = null;
-let liveTimerRAF = null;
-
-function stopInhaleTimer() {
-  if (breathStartTime === null) return;
-  const durationSec = (performance.now() - breathStartTime) / 1000;
-  breathStartTime = null;
-  lastGrowthFrameTime = null;
-  if (liveTimerRAF) cancelAnimationFrame(liveTimerRAF);
-  recordInspiration(durationSec);
-}
-
+// down / repeated the whole time. Both games share this same signal.
 function enterNormal() {
   ensureAudioContext();
   setBreathMode('normal');
-  stopInhaleTimer();
 }
 
 function enterExpiration() {
   ensureAudioContext();
   setBreathMode('expiration');
-  stopInhaleTimer();
 }
 
 function enterInspiration() {
   ensureAudioContext();
   setBreathMode('inspiration');
-  breathStartTime = performance.now();
-  lastGrowthFrameTime = breathStartTime;
-  tickLiveInspirationTimer();
 }
 
-// Runs every frame while inhaling: the on-screen timer counts up and the
-// selected plot grows live, in step with the rain animation — the plant
-// visibly grows *as* you breathe in, not only once you stop.
-function tickLiveInspirationTimer() {
-  if (!isBlowing || breathStartTime === null) return;
-  const now = performance.now();
-  const elapsed = (now - breathStartTime) / 1000;
-  const el = document.getElementById('inspTimeValue');
-  if (el) el.textContent = `${elapsed.toFixed(1)}s`;
+/* ---------------- Cloud Garden ----------------
+   A one-minute children's breathing game. Only three states matter:
+   inhale → cloud, exhale → rain, pause → soak & grow.
+   Growth and rewards never depend on breath force, length, or "trying harder". */
+const SESSION_MS = 60_000;
+const ANIMALS_LAST_MS = 10_000;
+const PLOT_COUNT = 8;
 
-  const deltaSec = (now - lastGrowthFrameTime) / 1000;
-  lastGrowthFrameTime = now;
-  growHeldPlotsBy(deltaSec);
+const PLANT_KINDS = {
+  flower: { emoji: ['\u{1F337}', '\u{1F338}', '\u{1F33A}', '\u{1F33B}', '\u{1F339}'], label: 'flower' },
+  fern: { emoji: ['\u{1F33F}', '\u{1F343}'], label: 'fern' },
+  mushroom: { emoji: ['\u{1F344}'], label: 'mushroom' },
+  vine: { emoji: ['\u{1F33E}', '\u{1F331}'], label: 'vine' },
+};
+const SEEDLING = '\u{1F331}';
 
-  liveTimerRAF = requestAnimationFrame(tickLiveInspirationTimer);
+const ANIMALS = [
+  { id: 'bee', name: 'Bee', emoji: '\u{1F41D}', base: 'common' },
+  { id: 'butterfly', name: 'Butterfly', emoji: '\u{1F98B}', base: 'common' },
+  { id: 'frog', name: 'Frog', emoji: '\u{1F438}', base: 'uncommon' },
+  { id: 'bird', name: 'Bird', emoji: '\u{1F426}', base: 'uncommon' },
+  { id: 'snail', name: 'Snail', emoji: '\u{1F40C}', base: 'common' },
+  { id: 'ladybug', name: 'Ladybug', emoji: '\u{1F41E}', base: 'rare' },
+];
+
+const BIOMES = [
+  { id: 'meadow', label: 'Meadow biome', prefers: ['flower'] },
+  { id: 'fern-grove', label: 'Fern grove', prefers: ['fern'] },
+  { id: 'mushroom-hollow', label: 'Mushroom hollow', prefers: ['mushroom'] },
+  { id: 'vine-canopy', label: 'Vine canopy', prefers: ['vine'] },
+];
+
+const RARITY_RANK = { common: 0, uncommon: 1, rare: 2, legendary: 3 };
+const RARITY_LABEL = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', legendary: 'Legendary' };
+
+function loadJson(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch (e) {
+    return fallback;
+  }
 }
 
-/* ---------------- Breath Garden game ----------------
-   No mouse — one plot per finger key (A S D F J K L ;), same keys and
-   the same n/x/i breath signal as the clarinet, so an ESP32 rig with no
-   pointing device can play this exactly like the instrument. Hold a
-   key to tend that plot (chord several keys to tend several plots at
-   once), inhale to water/grow whatever's held, press a ripe plot's key
-   again to harvest it. */
-const GARDEN_PLOT_COUNT = NOTES.length;
-const FLOWER_EMOJIS = ['\u{1F337}', '\u{1F338}', '\u{1F33A}', '\u{1F33B}', '\u{1F339}'];
-const VEG_EMOJIS = ['\u{1F955}', '\u{1F966}', '\u{1F345}', '\u{1F33D}', '\u{1F346}'];
-const GROWTH_PER_FULL_BREATH_SEC = 6; // a ~6s sustained breath fully grows a fresh plant
+function saveJson(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
 
-let gardenPlots = new Array(GARDEN_PLOT_COUNT).fill(null);
-let plotButtons = new Array(GARDEN_PLOT_COUNT).fill(null);
-let heldPlotIndices = new Set();
-let score = 0;
-let bestScore = parseInt(localStorage.getItem('pulmoplay.bestScore') || '0', 10);
-let bestInspiration = parseFloat(localStorage.getItem('pulmoplay.bestInspiration') || '0');
+let gardenPhase = 'idle'; // idle | playing | complete | bonus | done
+let sessionStartedAt = 0;
+let sessionTimerRAF = null;
+let sessionPlants = []; // { kind, emoji, stage } stage 0=seedling 1=grown
+let cycleStep = 'await-inhale'; // await-inhale | await-exhale | await-pause
+let completedCycles = 0;
+let restCount = 0;
+let stateTimings = []; // { state, atMs, durationMs }
+let stateEnteredAt = 0;
+let animalsAppeared = false;
+let sessionAnimals = [];
+let earnedCards = [];
+let comfortRating = null;
+let bonusUsed = false;
+let bonusStep = null;
+let neighbourPlants = [];
+let sessionBiome = BIOMES[0];
+let visitCount = parseInt(localStorage.getItem('pulmoplay.gardenVisits') || '0', 10);
+let cardCollection = loadJson('pulmoplay.animalCards', {});
+let sessionLogs = loadJson('pulmoplay.sessionLogs', []);
 
 function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function plotStageIcon(plot) {
-  if (plot.growth >= 100) return plot.finalEmoji;
-  if (plot.growth >= 60) return '\u{1F33F}'; // herb / sprout
-  if (plot.growth >= 25) return '\u{1F331}'; // seedling
-  return '\u{2726}'; // tiny sparkle for a fresh seed
-}
-
 function buildRainLayer() {
   const layer = document.getElementById('rainLayer');
   if (!layer) return;
-  const DROP_COUNT = 16;
+  layer.innerHTML = '';
+  const DROP_COUNT = 18;
   for (let i = 0; i < DROP_COUNT; i++) {
     const drop = document.createElement('span');
     drop.className = 'raindrop';
@@ -503,142 +518,572 @@ function buildRainLayer() {
   }
 }
 
-function plotKeyLabel(index) {
-  return keyLabel(NOTES[index].key);
+function updateCloudGardenWeather() {
+  const cloud = document.getElementById('gardenCloud');
+  const rainLayer = document.getElementById('rainLayer');
+  if (!cloud || !rainLayer) return;
+
+  const active = gardenPhase === 'playing' || gardenPhase === 'bonus';
+  // Summon on inhale, rain on exhale. No force/duration scaling — presence only.
+  cloud.classList.toggle('visible', active && (breathMode === 'inspiration' || breathMode === 'expiration'));
+  cloud.classList.toggle('raining', active && breathMode === 'expiration');
+  rainLayer.classList.toggle('active', active && breathMode === 'expiration');
 }
 
-function renderGarden() {
-  const grid = document.getElementById('gardenGrid');
-  if (!grid) return;
-  grid.innerHTML = '';
-  plotButtons = [];
-  gardenPlots.forEach((plot, i) => {
-    const held = heldPlotIndices.has(i);
-    const btn = document.createElement('div');
-    btn.className = 'plot';
-    if (held) btn.classList.add('held');
-    if (plot && plot.growth >= 100) btn.classList.add('ripe');
-    if (isBlowing && held) btn.classList.add('watering');
+function formatTimeLeft(ms) {
+  const sec = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
-    const keyLabel = `<span class="plot-key">${plotKeyLabel(i)}</span>`;
-    if (!plot) {
-      btn.innerHTML = `<span class="plot-icon plot-empty">+</span>${keyLabel}`;
-    } else {
-      const growth = Math.min(100, plot.growth);
-      btn.innerHTML =
-        `<span class="plot-icon">${plotStageIcon(plot)}</span>` +
-        `<span class="plot-bar"><i style="width:${growth}%"></i></span>${keyLabel}`;
+function updateSessionHud() {
+  const timeEl = document.getElementById('sessionTimeValue');
+  const cycleEl = document.getElementById('cycleValue');
+  const restEl = document.getElementById('restValue');
+  const hintEl = document.getElementById('patternHint');
+  if (cycleEl) cycleEl.textContent = String(completedCycles);
+  if (restEl) restEl.textContent = String(restCount);
+
+  if (gardenPhase === 'playing') {
+    const left = SESSION_MS - (performance.now() - sessionStartedAt);
+    if (timeEl) timeEl.textContent = formatTimeLeft(left);
+    if (hintEl) {
+      if (cycleStep === 'await-inhale') hintEl.textContent = 'Inhale · summons a cloud';
+      else if (cycleStep === 'await-exhale') hintEl.textContent = 'Exhale · makes it rain';
+      else hintEl.textContent = 'Pause · water soaks in';
+    }
+  } else if (gardenPhase === 'bonus') {
+    if (timeEl) timeEl.textContent = 'Bonus';
+    if (hintEl) {
+      if (bonusStep === 'await-inhale') hintEl.textContent = 'Bonus inhale · gather wind';
+      else if (bonusStep === 'await-exhale') hintEl.textContent = 'Bonus exhale · carry seeds';
+      else hintEl.textContent = 'Bonus pause · seeds settle';
+    }
+  } else if (gardenPhase === 'idle') {
+    if (timeEl) timeEl.textContent = '1:00';
+    if (hintEl) hintEl.textContent = 'Inhale · Exhale · Pause';
+  }
+}
+
+function renderPlants() {
+  const root = document.getElementById('gardenPlots');
+  if (!root) return;
+  root.innerHTML = '';
+  for (let i = 0; i < PLOT_COUNT; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'plant-slot';
+    const plant = sessionPlants[i];
+    if (plant) {
+      const el = document.createElement('span');
+      el.className = 'plant';
+      el.textContent = plant.stage === 0 ? SEEDLING : plant.emoji;
+      el.title = plant.kind;
+      slot.appendChild(el);
+    }
+    root.appendChild(slot);
+  }
+}
+
+function pulseSoak() {
+  document.querySelectorAll('#gardenPlots .plant').forEach(el => {
+    el.classList.remove('soak');
+    void el.offsetWidth;
+    el.classList.add('soak');
+  });
+}
+
+function choosePlantKind() {
+  // Gentle mix that drifts as the garden fills — not tied to breath length.
+  const counts = { flower: 0, fern: 0, mushroom: 0, vine: 0 };
+  sessionPlants.forEach(p => { counts[p.kind] = (counts[p.kind] || 0) + 1; });
+  const grown = sessionPlants.filter(p => p.stage > 0).length;
+  const keys = Object.keys(PLANT_KINDS);
+  // Prefer under-represented kinds; early session leans flower/fern.
+  const weights = keys.map(k => {
+    let w = 1.2 - (counts[k] || 0) * 0.25;
+    if (grown < 2 && (k === 'flower' || k === 'fern')) w += 0.6;
+    if (grown >= 3 && (k === 'mushroom' || k === 'vine')) w += 0.5;
+    return Math.max(0.2, w);
+  });
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < keys.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return keys[i];
+  }
+  return 'flower';
+}
+
+function plantSeedling() {
+  if (sessionPlants.length >= PLOT_COUNT) return;
+  const kind = choosePlantKind();
+  sessionPlants.push({
+    kind,
+    emoji: pickRandom(PLANT_KINDS[kind].emoji),
+    stage: 0,
+  });
+  renderPlants();
+}
+
+function advanceGardenGrowth() {
+  // Pause after a completed inhale→exhale: soak water and grow.
+  // One discrete growth step per cycle — never scaled by how long you blew.
+  const seedlings = sessionPlants.filter(p => p.stage === 0);
+  if (seedlings.length > 0) {
+    const target = pickRandom(seedlings);
+    target.stage = 1;
+  } else if (sessionPlants.length < PLOT_COUNT) {
+    plantSeedling();
+    // Soft chance to sprout another empty plot as diversity grows
+    if (sessionPlants.length < PLOT_COUNT && Math.random() < 0.35) {
+      plantSeedling();
+    }
+  } else {
+    // All plots filled: gently reshuffle one plant kind for a changing mix
+    const idx = Math.floor(Math.random() * sessionPlants.length);
+    const kind = choosePlantKind();
+    sessionPlants[idx] = {
+      kind,
+      emoji: pickRandom(PLANT_KINDS[kind].emoji),
+      stage: 1,
+    };
+  }
+  renderPlants();
+  pulseSoak();
+}
+
+function determineBiome() {
+  const counts = { flower: 0, fern: 0, mushroom: 0, vine: 0 };
+  sessionPlants.forEach(p => { counts[p.kind] = (counts[p.kind] || 0) + 1; });
+  let best = BIOMES[0];
+  let bestScore = -1;
+  BIOMES.forEach(b => {
+    const score = b.prefers.reduce((sum, k) => sum + (counts[k] || 0), 0) + Math.random() * 0.4;
+    if (score > bestScore) {
+      bestScore = score;
+      best = b;
+    }
+  });
+  return best;
+}
+
+function bumpRarity(base, steps) {
+  const order = ['common', 'uncommon', 'rare', 'legendary'];
+  const i = Math.min(order.length - 1, Math.max(0, order.indexOf(base) + steps));
+  return order[i];
+}
+
+function rollAnimalCard(animal, biome) {
+  // Rarity from biome fit, plant mix, repeat visits, and gentle randomness —
+  // never from breathing force or session length.
+  const kinds = new Set(sessionPlants.map(p => p.kind));
+  let bump = 0;
+  if (biome.prefers.some(k => kinds.has(k))) bump += 1;
+  if (kinds.size >= 3) bump += 1;
+  if (visitCount >= 3 && Math.random() < 0.45) bump += 1;
+  if (Math.random() < 0.12) bump += 1;
+  if (Math.random() < 0.55) bump = Math.max(0, bump - 1); // keep commons common
+  const rarity = bumpRarity(animal.base, bump);
+  return {
+    id: animal.id,
+    name: animal.name,
+    emoji: animal.emoji,
+    rarity,
+    at: Date.now(),
+  };
+}
+
+function spawnAnimals() {
+  if (animalsAppeared) return;
+  animalsAppeared = true;
+  const sky = document.getElementById('sky');
+  const layer = document.getElementById('animalsLayer');
+  if (sky) sky.classList.add('phase-animals');
+  if (!layer) return;
+  layer.innerHTML = '';
+
+  const visitors = [...ANIMALS].sort(() => Math.random() - 0.5).slice(0, 3 + Math.floor(Math.random() * 2));
+  sessionAnimals = visitors;
+  visitors.forEach((animal, i) => {
+    const el = document.createElement('span');
+    el.className = 'visitor';
+    el.textContent = animal.emoji;
+    el.title = animal.name;
+    el.style.left = `${12 + i * 20 + Math.random() * 8}%`;
+    el.style.top = `${18 + (i % 2) * 28 + Math.random() * 10}%`;
+    el.style.animationDelay = `${(i * 0.25).toFixed(2)}s`;
+    layer.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+  });
+
+  const prompt = document.getElementById('promptText');
+  if (prompt) prompt.textContent = 'Friends are visiting your garden… keep the gentle pattern if you like.';
+}
+
+function awardCards() {
+  sessionBiome = determineBiome();
+  const biomeEl = document.getElementById('endBiomeLabel');
+  if (biomeEl) biomeEl.textContent = sessionBiome.label;
+
+  const pool = sessionAnimals.length ? sessionAnimals : ANIMALS.slice(0, 3);
+  const count = Math.min(3, Math.max(1, pool.length));
+  earnedCards = [];
+  for (let i = 0; i < count; i++) {
+    const animal = pool[i % pool.length];
+    const card = rollAnimalCard(animal, sessionBiome);
+    earnedCards.push(card);
+    if (!cardCollection[card.id]) {
+      cardCollection[card.id] = { name: card.name, emoji: card.emoji, count: 0, bestRarity: card.rarity };
+    }
+    cardCollection[card.id].count += 1;
+    if (RARITY_RANK[card.rarity] > RARITY_RANK[cardCollection[card.id].bestRarity]) {
+      cardCollection[card.id].bestRarity = card.rarity;
+    }
+  }
+  saveJson('pulmoplay.animalCards', cardCollection);
+
+  const tray = document.getElementById('cardTray');
+  if (tray) {
+    tray.innerHTML = '';
+    earnedCards.forEach(card => {
+      const el = document.createElement('div');
+      el.className = `animal-card rarity-${card.rarity}`;
+      el.innerHTML =
+        `<span class="card-emoji">${card.emoji}</span>` +
+        `<span class="card-name">${card.name}</span>` +
+        `<span class="card-rarity">${RARITY_LABEL[card.rarity]}</span>`;
+      tray.appendChild(el);
+    });
+  }
+  renderCollection();
+}
+
+function renderCollection() {
+  const root = document.getElementById('collectionCards');
+  if (!root) return;
+  const ids = Object.keys(cardCollection);
+  if (ids.length === 0) {
+    root.innerHTML = '<span class="collection-empty">Play a session to collect animal cards</span>';
+    return;
+  }
+  root.innerHTML = '';
+  ids.forEach(id => {
+    const c = cardCollection[id];
+    const chip = document.createElement('span');
+    chip.className = 'collection-chip';
+    chip.innerHTML = `${c.emoji} ${c.name} <span class="count">×${c.count}</span>`;
+    root.appendChild(chip);
+  });
+}
+
+function recordStateDuration(nextState) {
+  const now = performance.now();
+  if (stateEnteredAt) {
+    const last = stateTimings[stateTimings.length - 1];
+    if (last && last.durationMs == null) {
+      last.durationMs = Math.round(now - stateEnteredAt);
+    }
+  }
+  stateEnteredAt = now;
+  stateTimings.push({ state: nextState, atMs: Math.round(now - sessionStartedAt), durationMs: null });
+}
+
+function persistSessionLog(finalized) {
+  const log = {
+    at: Date.now(),
+    completedCycles,
+    restCount,
+    comfortRating,
+    biome: sessionBiome.id,
+    plants: sessionPlants.map(p => p.kind),
+    cards: earnedCards.map(c => ({ id: c.id, rarity: c.rarity })),
+    timings: stateTimings,
+    bonusUsed,
+    neighbourPlants: neighbourPlants.map(p => p.kind),
+    note: 'Records timing, cycles, rests, and optional comfort only — not lung capacity, strength, or cough effectiveness.',
+    finalized: !!finalized,
+  };
+  sessionLogs = [log, ...sessionLogs].slice(0, 20);
+  saveJson('pulmoplay.sessionLogs', sessionLogs);
+  return log;
+}
+
+function updateSessionNote() {
+  const el = document.getElementById('sessionNote');
+  if (!el) return;
+  el.textContent =
+    `${completedCycles} breath cycles · ${restCount} rests · cards from ${sessionBiome.label}. ` +
+    'Saved for comfort and pattern — not as a measure of lung capacity or strength.';
+}
+
+function onGardenBreathChange(previous, mode) {
+  if (gardenPhase !== 'playing' && gardenPhase !== 'bonus') return;
+
+  if (gardenPhase === 'playing') {
+    recordStateDuration(mode === 'normal' ? 'pause' : mode === 'inspiration' ? 'inhale' : 'exhale');
+
+    if (mode === 'normal' && previous !== 'normal') {
+      // A return to pause/rest after any breath effort counts as a rest.
+      if (previous === 'inspiration' || previous === 'expiration') {
+        restCount += 1;
+      }
     }
 
-    plotButtons[i] = btn;
-    grid.appendChild(btn);
-  });
-}
-
-// Updates one plot's icon/growth-bar in place (no innerHTML rebuild) so it
-// stays smooth when called on every animation frame while inhaling.
-function updatePlotVisual(index) {
-  const btn = plotButtons[index];
-  const plot = gardenPlots[index];
-  if (!btn || !plot) return;
-  const growth = Math.min(100, plot.growth);
-
-  const icon = btn.querySelector('.plot-icon');
-  const newIconText = plotStageIcon(plot);
-  if (icon && icon.textContent !== newIconText) {
-    icon.textContent = newIconText;
-    btn.classList.remove('stage-pop');
-    void btn.offsetWidth; // restart the pop animation
-    btn.classList.add('stage-pop');
-  }
-
-  const bar = btn.querySelector('.plot-bar i');
-  if (bar) bar.style.width = `${growth}%`;
-
-  btn.classList.toggle('ripe', growth >= 100);
-}
-
-function updateWateringVisual() {
-  plotButtons.forEach((btn, i) => {
-    if (btn) btn.classList.toggle('watering', isBlowing && heldPlotIndices.has(i));
-  });
-}
-
-// Fires on keydown of a plot's finger key (A S D F J K L ;), no mouse
-// involved: empty plot -> plant a seed; ripe plot -> harvest it; growing
-// plot -> just mark it held so it grows while you inhale. Chording several
-// keys tends several plots from the same breath at once.
-function onPlotKeyDown(index) {
-  const plot = gardenPlots[index];
-  if (!plot) {
-    gardenPlots[index] = {
-      kind: Math.random() < 0.5 ? 'flower' : 'veg',
-      finalEmoji: Math.random() < 0.5 ? pickRandom(FLOWER_EMOJIS) : pickRandom(VEG_EMOJIS),
-      growth: 0,
-    };
-    heldPlotIndices.add(index);
-  } else if (plot.growth >= 100) {
-    harvestPlot(index);
+    if (cycleStep === 'await-inhale' && mode === 'inspiration') {
+      cycleStep = 'await-exhale';
+      if (sessionPlants.length === 0) plantSeedling();
+    } else if (cycleStep === 'await-exhale' && mode === 'expiration') {
+      cycleStep = 'await-pause';
+    } else if (cycleStep === 'await-pause' && mode === 'normal') {
+      completedCycles += 1;
+      advanceGardenGrowth();
+      cycleStep = 'await-inhale';
+    }
+    updateSessionHud();
     return;
+  }
+
+  // Bonus: one approved cycle sends wind + neighbour plants. Same core reward either way.
+  if (bonusStep === 'await-inhale' && mode === 'inspiration') {
+    bonusStep = 'await-exhale';
+  } else if (bonusStep === 'await-exhale' && mode === 'expiration') {
+    bonusStep = 'await-pause';
+    playWindSeeds();
+  } else if (bonusStep === 'await-pause' && mode === 'normal') {
+    settleNeighbourSeeds();
+    finishBonus();
+  }
+  updateSessionHud();
+}
+
+function playWindSeeds() {
+  const wind = document.getElementById('windLayer');
+  if (!wind) return;
+  wind.innerHTML = '';
+  wind.classList.add('active');
+  for (let i = 0; i < 5; i++) {
+    const seed = document.createElement('span');
+    seed.className = 'seed-puff';
+    seed.style.top = `${30 + Math.random() * 40}%`;
+    seed.style.animationDelay = `${(i * 0.12).toFixed(2)}s`;
+    wind.appendChild(seed);
+  }
+}
+
+function settleNeighbourSeeds() {
+  const kinds = ['flower', 'fern', 'mushroom', 'vine'];
+  neighbourPlants = [];
+  const n = 2 + Math.floor(Math.random() * 2);
+  for (let i = 0; i < n; i++) {
+    const kind = pickRandom(kinds);
+    neighbourPlants.push({
+      kind,
+      emoji: pickRandom(PLANT_KINDS[kind].emoji),
+      stage: 1,
+    });
+  }
+  const box = document.getElementById('neighbourPlot');
+  const plants = document.getElementById('neighbourPlants');
+  if (box) box.hidden = false;
+  if (plants) {
+    plants.innerHTML = '';
+    neighbourPlants.forEach(p => {
+      const el = document.createElement('span');
+      el.className = 'plant';
+      el.textContent = p.emoji;
+      plants.appendChild(el);
+    });
+  }
+}
+
+function finishBonus() {
+  bonusUsed = true;
+  gardenPhase = 'done';
+  const hint = document.getElementById('bonusHint');
+  if (hint) hint.textContent = 'Seeds settled next door. Your animal cards stay the same.';
+  const bonusBtn = document.getElementById('bonusGardenBtn');
+  if (bonusBtn) bonusBtn.disabled = true;
+  const prompt = document.getElementById('promptText');
+  if (prompt) prompt.textContent = 'Bonus complete — soft wind, new neighbour plants.';
+  persistSessionLog(true);
+  updateSessionHud();
+}
+
+function tickSession() {
+  if (gardenPhase !== 'playing') return;
+  const elapsed = performance.now() - sessionStartedAt;
+  const left = SESSION_MS - elapsed;
+  updateSessionHud();
+
+  if (left <= ANIMALS_LAST_MS) spawnAnimals();
+
+  if (left <= 0) {
+    endSession();
+    return;
+  }
+  sessionTimerRAF = requestAnimationFrame(tickSession);
+}
+
+function setGardenUIMode(mode) {
+  const prompt = document.getElementById('gardenPrompt');
+  const end = document.getElementById('gardenEnd');
+  const startBtn = document.getElementById('startGardenBtn');
+  if (mode === 'idle' || mode === 'playing' || mode === 'bonus') {
+    if (prompt) prompt.hidden = false;
+    if (end) end.hidden = true;
+    if (startBtn) startBtn.hidden = mode !== 'idle';
   } else {
-    heldPlotIndices.add(index);
+    if (prompt) prompt.hidden = true;
+    if (end) end.hidden = false;
   }
-  renderGarden();
 }
 
-function onPlotKeyUp(index) {
-  if (!heldPlotIndices.has(index)) return;
-  heldPlotIndices.delete(index);
-  renderGarden();
+function resetGardenWorld() {
+  sessionPlants = [];
+  neighbourPlants = [];
+  completedCycles = 0;
+  restCount = 0;
+  stateTimings = [];
+  stateEnteredAt = 0;
+  animalsAppeared = false;
+  sessionAnimals = [];
+  earnedCards = [];
+  comfortRating = null;
+  bonusUsed = false;
+  bonusStep = null;
+  cycleStep = 'await-inhale';
+  sessionBiome = BIOMES[0];
+
+  const sky = document.getElementById('sky');
+  const animals = document.getElementById('animalsLayer');
+  const wind = document.getElementById('windLayer');
+  const neighbour = document.getElementById('neighbourPlot');
+  const tray = document.getElementById('cardTray');
+  if (sky) sky.classList.remove('phase-animals');
+  if (animals) animals.innerHTML = '';
+  if (wind) {
+    wind.classList.remove('active');
+    wind.innerHTML = '';
+  }
+  if (neighbour) neighbour.hidden = true;
+  if (tray) tray.innerHTML = '';
+  document.querySelectorAll('.comfort-btn').forEach(b => b.classList.remove('selected'));
+  renderPlants();
+  updateCloudGardenWeather();
+  updateSessionHud();
 }
 
-// Called every animation frame while inhaling — grows every currently held
-// plot proportionally to how long this breath has lasted so far, in sync
-// with the falling rain, rather than only applying growth once you stop.
-function growHeldPlotsBy(deltaSeconds) {
-  if (heldPlotIndices.size === 0 || deltaSeconds <= 0) return;
-  const gain = deltaSeconds / GROWTH_PER_FULL_BREATH_SEC * 100;
-  heldPlotIndices.forEach(index => {
-    const plot = gardenPlots[index];
-    if (!plot || plot.growth >= 100) return;
-    plot.growth = Math.min(100, plot.growth + gain);
-    updatePlotVisual(index);
+function startGardenSession() {
+  ensureAudioContext();
+  if (sessionTimerRAF) cancelAnimationFrame(sessionTimerRAF);
+  resetGardenWorld();
+  gardenPhase = 'playing';
+  sessionStartedAt = performance.now();
+  stateEnteredAt = sessionStartedAt;
+  stateTimings.push({ state: breathMode === 'normal' ? 'pause' : breathMode === 'inspiration' ? 'inhale' : 'exhale', atMs: 0, durationMs: null });
+
+  visitCount += 1;
+  localStorage.setItem('pulmoplay.gardenVisits', String(visitCount));
+
+  const prompt = document.getElementById('promptText');
+  if (prompt) {
+    prompt.textContent = 'Inhale for a cloud, exhale for rain, pause so the garden can drink.';
+  }
+  setGardenUIMode('playing');
+  plantSeedling();
+  updateSessionHud();
+  updateCloudGardenWeather();
+  sessionTimerRAF = requestAnimationFrame(tickSession);
+}
+
+function endSession() {
+  if (sessionTimerRAF) cancelAnimationFrame(sessionTimerRAF);
+  sessionTimerRAF = null;
+  recordStateDuration('end');
+  gardenPhase = 'complete';
+
+  // Ensure animals visited if the session somehow skipped the window
+  if (!animalsAppeared) spawnAnimals();
+
+  awardCards();
+  updateSessionNote();
+  persistSessionLog(false);
+
+  const prompt = document.getElementById('promptText');
+  if (prompt) prompt.textContent = 'Minute complete — keep your cards, or try the optional wind bonus.';
+
+  const bonusBtn = document.getElementById('bonusGardenBtn');
+  if (bonusBtn) bonusBtn.disabled = false;
+  const hint = document.getElementById('bonusHint');
+  if (hint) {
+    hint.textContent = 'Optional: one more approved breath cycle sends wind carrying seeds to a neighbouring plot. Same core reward either way.';
+  }
+
+  setGardenUIMode('complete');
+  updateCloudGardenWeather();
+  updateSessionHud();
+}
+
+function beginBonus() {
+  if (gardenPhase !== 'complete' || bonusUsed) return;
+  gardenPhase = 'bonus';
+  bonusStep = 'await-inhale';
+  setGardenUIMode('bonus');
+  const promptWrap = document.getElementById('gardenPrompt');
+  const end = document.getElementById('gardenEnd');
+  if (promptWrap) promptWrap.hidden = false;
+  if (end) end.hidden = false;
+  const startBtn = document.getElementById('startGardenBtn');
+  if (startBtn) startBtn.hidden = true;
+  const prompt = document.getElementById('promptText');
+  if (prompt) prompt.textContent = 'Bonus cycle: inhale, exhale, then pause — wind will carry seeds next door.';
+  const bonusBtn = document.getElementById('bonusGardenBtn');
+  if (bonusBtn) bonusBtn.disabled = true;
+  updateSessionHud();
+  updateCloudGardenWeather();
+}
+
+function finishGarden() {
+  if (gardenPhase === 'playing') return;
+  if (gardenPhase === 'bonus') {
+    // Ending early still keeps the same core reward (cards already awarded).
+    gardenPhase = 'done';
+  }
+  persistSessionLog(true);
+  gardenPhase = 'idle';
+  const prompt = document.getElementById('promptText');
+  if (prompt) {
+    prompt.textContent = 'Breathe gently. Inhale summons a cloud, exhale makes it rain, pause lets plants grow.';
+  }
+  setGardenUIMode('idle');
+  updateCloudGardenWeather();
+  updateSessionHud();
+  renderCollection();
+}
+
+function setupCloudGardenUI() {
+  const startBtn = document.getElementById('startGardenBtn');
+  if (startBtn) startBtn.addEventListener('click', startGardenSession);
+
+  const finishBtn = document.getElementById('finishGardenBtn');
+  if (finishBtn) finishBtn.addEventListener('click', finishGarden);
+
+  const bonusBtn = document.getElementById('bonusGardenBtn');
+  if (bonusBtn) bonusBtn.addEventListener('click', beginBonus);
+
+  document.querySelectorAll('.comfort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      comfortRating = Number(btn.dataset.comfort);
+      document.querySelectorAll('.comfort-btn').forEach(b => b.classList.toggle('selected', b === btn));
+      updateSessionNote();
+      persistSessionLog(false);
+    });
   });
-}
 
-function harvestPlot(index) {
-  gardenPlots[index] = null;
-  heldPlotIndices.delete(index);
-  score += 1;
-  const scoreEl = document.getElementById('scoreValue');
-  if (scoreEl) scoreEl.textContent = score;
-  if (score > bestScore) {
-    bestScore = score;
-    localStorage.setItem('pulmoplay.bestScore', String(bestScore));
-    const bestEl = document.getElementById('bestScoreValue');
-    if (bestEl) bestEl.textContent = bestScore;
-  }
-  renderGarden();
-}
-
-function recordInspiration(durationSec) {
-  const el = document.getElementById('inspTimeValue');
-  if (el) el.textContent = `${durationSec.toFixed(1)}s`;
-  if (durationSec > bestInspiration) {
-    bestInspiration = durationSec;
-    localStorage.setItem('pulmoplay.bestInspiration', String(bestInspiration));
-    const bestEl = document.getElementById('bestInspValue');
-    if (bestEl) bestEl.textContent = `${bestInspiration.toFixed(1)}s`;
-  }
-}
-
-function updateGardenStatsUI() {
-  const scoreEl = document.getElementById('scoreValue');
-  const bestScoreEl = document.getElementById('bestScoreValue');
-  const bestInspEl = document.getElementById('bestInspValue');
-  if (scoreEl) scoreEl.textContent = score;
-  if (bestScoreEl) bestScoreEl.textContent = bestScore;
-  if (bestInspEl) bestInspEl.textContent = `${bestInspiration.toFixed(1)}s`;
+  renderCollection();
+  setGardenUIMode('idle');
+  updateSessionHud();
 }
 
 /* ---------------- Tab switching ---------------- */
@@ -693,12 +1138,9 @@ function setupKeyboard() {
     const index = KEY_TO_INDEX[k];
     if (index === undefined) return;
     e.preventDefault();
-    // Same finger-key + breath mode = same clarinet note on either tab, so
-    // the garden plays the identical pitch while you tend it — the note
-    // keeps sounding (or staying muted) exactly like triggerNoteOn already
-    // gates on instrumentMuted for the clarinet.
+    // Finger keys always drive the clarinet. Cloud Garden only listens to
+    // the three breath states (I / ↓ / N), so note keys never change rewards.
     triggerNoteOn(index);
-    if (activeTab === 'garden') onPlotKeyDown(index);
   });
 
   window.addEventListener('keyup', e => {
@@ -712,7 +1154,6 @@ function setupKeyboard() {
     const index = KEY_TO_INDEX[k];
     if (index === undefined) return;
     triggerNoteOff(index);
-    if (activeTab === 'garden') onPlotKeyUp(index);
   });
 }
 
@@ -811,9 +1252,11 @@ setupSharpPill();
 setupBreathTestButton();
 setupConsoleControls();
 setupTabs();
+setupCloudGardenUI();
 buildRainLayer();
 updateBreathUI();
 updateTrackUI();
 updateLevelMeter();
-renderGarden();
-updateGardenStatsUI();
+renderPlants();
+renderCollection();
+updateSessionHud();
