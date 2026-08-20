@@ -513,6 +513,8 @@ let guidePhaseStartedAt = 0;
 let guideRAF = null;
 let guideCompleteCycles = 0; // guided loops finished this session
 let guideLastTickAt = 0;
+let demoMode = false; // staff demo: one full cycle, then jump to finale
+let demoFinaleTriggered = false;
 
 function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -686,6 +688,11 @@ function tickBreathGuide() {
         return;
       }
       updateSessionHud();
+      // Demo: after the first full inhale→hold→exhale, skip to the last 4s.
+      if (demoMode && !demoFinaleTriggered && guideCompleteCycles >= 1) {
+        jumpToDemoFinale();
+        return;
+      }
     }
     updateCloudGardenWeather();
     updateGuideUI(0);
@@ -1107,6 +1114,8 @@ function setGardenUIMode(mode) {
 
 function resetGardenWorld() {
   stopBreathGuide();
+  demoMode = false;
+  demoFinaleTriggered = false;
   sessionPlants = [];
   neighbourPlants = [];
   completedCycles = 0;
@@ -1170,34 +1179,47 @@ function startGardenSession() {
   sessionTimerRAF = requestAnimationFrame(tickSession);
 }
 
-// Staff/demo only: jump to the last few seconds so demos do not wait a full minute.
+// Staff/demo only: play one full guided breath cycle, then jump to the last 4s.
 const DEMO_REMAINING_MS = 4_000;
-function runDemoVersion() {
-  if (gardenPhase === 'playing') {
-    sessionStartedAt = performance.now() - (SESSION_MS - DEMO_REMAINING_MS);
-    spawnAnimals();
-    updateSessionHud();
-    return;
-  }
-  if (gardenPhase !== 'idle' && gardenPhase !== 'done') return;
 
-  startGardenSession();
-  // Seed a fuller garden so the demo ending looks lived-in.
-  for (let i = 0; i < 5; i++) {
+function jumpToDemoFinale() {
+  if (demoFinaleTriggered || gardenPhase !== 'playing') return;
+  demoFinaleTriggered = true;
+
+  // Fill the garden a bit so the finale looks lived-in after one cycle.
+  for (let i = 0; i < 4; i++) {
     if (sessionPlants.length < PLOT_COUNT) plantSeedling();
   }
   sessionPlants.forEach(p => {
     p.stage = 1;
     p.emoji = pickRandom(PLANT_KINDS[p.kind].emoji);
-    p.scale = 1.15 + Math.random() * 0.35;
+    p.scale = Math.max(p.scale || 1, 1.15 + Math.random() * 0.35);
   });
-  completedCycles = 3;
   renderPlants();
+
   sessionStartedAt = performance.now() - (SESSION_MS - DEMO_REMAINING_MS);
   spawnAnimals();
   updateSessionHud();
   const prompt = document.getElementById('promptText');
-  if (prompt) prompt.textContent = 'Demo version — last 4 seconds (not for patients).';
+  if (prompt) prompt.textContent = 'Demo version — final 4 seconds (not for patients).';
+}
+
+function runDemoVersion() {
+  if (gardenPhase === 'playing' && demoMode) {
+    // Already in a demo run — jump ahead if the first cycle finished.
+    if (guideCompleteCycles >= 1) jumpToDemoFinale();
+    return;
+  }
+  if (gardenPhase !== 'idle' && gardenPhase !== 'done' && gardenPhase !== 'playing') return;
+
+  // Start (or restart) a session that will skip after one full breath cycle.
+  startGardenSession();
+  demoMode = true;
+  demoFinaleTriggered = false;
+  const prompt = document.getElementById('promptText');
+  if (prompt) {
+    prompt.textContent = 'Demo version — one breath cycle, then the finale (not for patients).';
+  }
 }
 
 function endSession() {
