@@ -55,7 +55,7 @@ A one-minute session. Breathing creates weather that grows a magical garden:
 | Exhale (`↓`) | Makes the cloud rain |
 | Pause (`N`) | Water soaks in and plants grow |
 
-Across the minute, seedlings become a changing mix of flowers, ferns, mushrooms, and vines. In the final 10 seconds, animals such as bees, butterflies, frogs, and birds visit. After the session the child collects animal cards — rarity comes from garden biome, plant mix, repeat visits, and gentle randomness, **not** breathing force or session length.
+Across the minute, seedlings become a changing mix of flowers, ferns, mushrooms, and vines. In the final 10 seconds, **one animal** (such as a bee, butterfly, frog, or bird) visits. After the session the child collects **that animal’s card** — rarity comes from garden biome, plant mix, repeat visits, and gentle randomness, **not** breathing force or session length.
 
 When the minute ends, they can keep the same core reward and finish, or try an optional bonus: one more approved breath cycle sends wind carrying seeds to a neighbouring plot.
 

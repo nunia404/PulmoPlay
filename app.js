@@ -706,22 +706,21 @@ function spawnAnimals() {
   if (!layer) return;
   layer.innerHTML = '';
 
-  const visitors = [...ANIMALS].sort(() => Math.random() - 0.5).slice(0, 3 + Math.floor(Math.random() * 2));
-  sessionAnimals = visitors;
-  visitors.forEach((animal, i) => {
-    const el = document.createElement('span');
-    el.className = 'visitor';
-    el.textContent = animal.emoji;
-    el.title = animal.name;
-    el.style.left = `${12 + i * 20 + Math.random() * 8}%`;
-    el.style.top = `${18 + (i % 2) * 28 + Math.random() * 10}%`;
-    el.style.animationDelay = `${(i * 0.25).toFixed(2)}s`;
-    layer.appendChild(el);
-    requestAnimationFrame(() => el.classList.add('show'));
-  });
+  // One animal visit per one-minute session.
+  const visitor = pickRandom(ANIMALS);
+  sessionAnimals = [visitor];
+  const el = document.createElement('span');
+  el.className = 'visitor';
+  el.textContent = visitor.emoji;
+  el.title = visitor.name;
+  el.style.left = '44%';
+  el.style.top = '20%';
+  el.style.fontSize = '2rem';
+  layer.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
 
   const prompt = document.getElementById('promptText');
-  if (prompt) prompt.textContent = 'Friends are visiting your garden… keep the gentle pattern if you like.';
+  if (prompt) prompt.textContent = `${visitor.name} is visiting your garden… keep the gentle pattern if you like.`;
 }
 
 function awardCards() {
@@ -729,35 +728,29 @@ function awardCards() {
   const biomeEl = document.getElementById('endBiomeLabel');
   if (biomeEl) biomeEl.textContent = sessionBiome.label;
 
-  const pool = sessionAnimals.length ? sessionAnimals : ANIMALS.slice(0, 3);
-  const count = Math.min(3, Math.max(1, pool.length));
-  earnedCards = [];
-  for (let i = 0; i < count; i++) {
-    const animal = pool[i % pool.length];
-    const card = rollAnimalCard(animal, sessionBiome);
-    earnedCards.push(card);
-    if (!cardCollection[card.id]) {
-      cardCollection[card.id] = { name: card.name, emoji: card.emoji, count: 0, bestRarity: card.rarity };
-    }
-    cardCollection[card.id].count += 1;
-    if (RARITY_RANK[card.rarity] > RARITY_RANK[cardCollection[card.id].bestRarity]) {
-      cardCollection[card.id].bestRarity = card.rarity;
-    }
+  // One animal card per one-minute session — same visitor that appeared.
+  const animal = sessionAnimals[0] || pickRandom(ANIMALS);
+  const card = rollAnimalCard(animal, sessionBiome);
+  earnedCards = [card];
+  if (!cardCollection[card.id]) {
+    cardCollection[card.id] = { name: card.name, emoji: card.emoji, count: 0, bestRarity: card.rarity };
+  }
+  cardCollection[card.id].count += 1;
+  if (RARITY_RANK[card.rarity] > RARITY_RANK[cardCollection[card.id].bestRarity]) {
+    cardCollection[card.id].bestRarity = card.rarity;
   }
   saveJson('pulmoplay.animalCards', cardCollection);
 
   const tray = document.getElementById('cardTray');
   if (tray) {
     tray.innerHTML = '';
-    earnedCards.forEach(card => {
-      const el = document.createElement('div');
-      el.className = `animal-card rarity-${card.rarity}`;
-      el.innerHTML =
-        `<span class="card-emoji">${card.emoji}</span>` +
-        `<span class="card-name">${card.name}</span>` +
-        `<span class="card-rarity">${RARITY_LABEL[card.rarity]}</span>`;
-      tray.appendChild(el);
-    });
+    const el = document.createElement('div');
+    el.className = `animal-card rarity-${card.rarity}`;
+    el.innerHTML =
+      `<span class="card-emoji">${card.emoji}</span>` +
+      `<span class="card-name">${card.name}</span>` +
+      `<span class="card-rarity">${RARITY_LABEL[card.rarity]}</span>`;
+    tray.appendChild(el);
   }
   renderCollection();
 }
@@ -773,9 +766,12 @@ function renderCollection() {
   root.innerHTML = '';
   ids.forEach(id => {
     const c = cardCollection[id];
+    const rarity = c.bestRarity || 'common';
     const chip = document.createElement('span');
-    chip.className = 'collection-chip';
-    chip.innerHTML = `${c.emoji} ${c.name} <span class="count">×${c.count}</span>`;
+    chip.className = `collection-chip rarity-${rarity}`;
+    chip.innerHTML =
+      `${c.emoji} ${c.name} <span class="count">×${c.count}</span>` +
+      `<span class="chip-rarity">${RARITY_LABEL[rarity]}</span>`;
     root.appendChild(chip);
   });
 }
