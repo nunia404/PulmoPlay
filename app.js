@@ -446,12 +446,12 @@ const PLANT_KINDS = {
 const SEEDLING = '\u{1F331}';
 
 const ANIMALS = [
-  { id: 'bee', name: 'Bee', emoji: '\u{1F41D}', base: 'common' },
-  { id: 'butterfly', name: 'Butterfly', emoji: '\u{1F98B}', base: 'common' },
-  { id: 'frog', name: 'Frog', emoji: '\u{1F438}', base: 'uncommon' },
-  { id: 'bird', name: 'Bird', emoji: '\u{1F426}', base: 'uncommon' },
-  { id: 'snail', name: 'Snail', emoji: '\u{1F40C}', base: 'common' },
-  { id: 'ladybug', name: 'Ladybug', emoji: '\u{1F41E}', base: 'rare' },
+  { id: 'bee', name: 'Bee', emoji: '\u{1F41D}', base: 'common', habitat: 'air' },
+  { id: 'butterfly', name: 'Butterfly', emoji: '\u{1F98B}', base: 'common', habitat: 'air' },
+  { id: 'bird', name: 'Bird', emoji: '\u{1F426}', base: 'uncommon', habitat: 'air' },
+  { id: 'ladybug', name: 'Ladybug', emoji: '\u{1F41E}', base: 'rare', habitat: 'air' },
+  { id: 'frog', name: 'Frog', emoji: '\u{1F438}', base: 'uncommon', habitat: 'ground' },
+  { id: 'snail', name: 'Snail', emoji: '\u{1F40C}', base: 'common', habitat: 'ground' },
 ];
 
 const BIOMES = [
@@ -512,6 +512,7 @@ let guideSecondsLeft = 4;
 let guidePhaseStartedAt = 0;
 let guideRAF = null;
 let guideCompleteCycles = 0; // guided loops finished this session
+let guideLastTickAt = 0;
 
 function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -627,6 +628,7 @@ function startBreathGuide() {
   guidePhase = step.phase;
   guideSecondsLeft = step.seconds;
   guidePhaseStartedAt = performance.now();
+  guideLastTickAt = guidePhaseStartedAt;
   setGuideVisible(true);
   updateGuideUI(0);
   updateCloudGardenWeather();
@@ -640,8 +642,12 @@ function tickBreathGuide() {
     return;
   }
 
+  const now = performance.now();
+  const deltaSec = Math.min(0.05, (now - guideLastTickAt) / 1000);
+  guideLastTickAt = now;
+
   const step = GUIDE_STEPS[guideStepIndex];
-  const elapsed = (performance.now() - guidePhaseStartedAt) / 1000;
+  const elapsed = (now - guidePhaseStartedAt) / 1000;
   const progress = Math.min(1, elapsed / step.seconds);
   const left = Math.max(1, Math.ceil(step.seconds - elapsed));
   if (left !== guideSecondsLeft) {
@@ -649,13 +655,18 @@ function tickBreathGuide() {
   }
   updateGuideUI(progress);
 
+  // Hold = water soaking in — plants swell larger and larger.
+  if (guidePhase === 'hold') {
+    growPlantsDuringSoak(deltaSec);
+  }
+
   if (elapsed >= step.seconds) {
     const finishedPhase = guidePhase;
     guideStepIndex = (guideStepIndex + 1) % GUIDE_STEPS.length;
     const next = GUIDE_STEPS[guideStepIndex];
     guidePhase = next.phase;
     guideSecondsLeft = next.seconds;
-    guidePhaseStartedAt = performance.now();
+    guidePhaseStartedAt = now;
 
     // Completing exhale closes one guided cycle: grow the garden gently.
     if (finishedPhase === 'exhale') {
@@ -691,19 +702,43 @@ function renderPlants() {
     const plant = sessionPlants[i];
     if (plant) {
       const el = document.createElement('span');
-      el.className = 'plant';
+      el.className = 'plant' + (plant.stage === 0 ? ' seedling' : '');
       el.textContent = plant.stage === 0 ? SEEDLING : plant.emoji;
       el.title = plant.kind;
+      el.style.setProperty('--plant-scale', String(plant.scale || (plant.stage === 0 ? 0.55 : 1)));
       slot.appendChild(el);
     }
     root.appendChild(slot);
   }
 }
 
+function applyPlantScales() {
+  const nodes = document.querySelectorAll('#gardenPlots .plant');
+  sessionPlants.forEach((plant, i) => {
+    const el = nodes[i];
+    if (!el || !plant) return;
+    el.style.setProperty('--plant-scale', String(plant.scale));
+    el.classList.toggle('soak', guideRunning && guidePhase === 'hold');
+  });
+}
+
+// During hold (water absorption), plants swell larger and larger.
+function growPlantsDuringSoak(deltaSec) {
+  if (!sessionPlants.length || deltaSec <= 0) return;
+  let changed = false;
+  sessionPlants.forEach(plant => {
+    const cap = plant.stage === 0 ? 1.05 : 1.85;
+    const next = Math.min(cap, plant.scale + deltaSec * 0.28);
+    if (next !== plant.scale) {
+      plant.scale = next;
+      changed = true;
+    }
+  });
+  if (changed) applyPlantScales();
+}
+
 function pulseSoak() {
   document.querySelectorAll('#gardenPlots .plant').forEach(el => {
-    el.classList.remove('soak');
-    void el.offsetWidth;
     el.classList.add('soak');
   });
 }
@@ -737,34 +772,35 @@ function plantSeedling() {
     kind,
     emoji: pickRandom(PLANT_KINDS[kind].emoji),
     stage: 0,
+    scale: 0.5,
   });
   renderPlants();
 }
 
 function advanceGardenGrowth() {
-  // Pause after a completed inhale→exhale: soak water and grow.
-  // One discrete growth step per cycle — never scaled by how long you blew.
+  // After a full inhale→hold→exhale cycle: soak has already swollen plants;
+  // now mature a seedling and invite new sprouts.
   const seedlings = sessionPlants.filter(p => p.stage === 0);
   if (seedlings.length > 0) {
     const target = pickRandom(seedlings);
     target.stage = 1;
+    target.emoji = pickRandom(PLANT_KINDS[target.kind].emoji);
+    target.scale = Math.max(target.scale, 1.05);
   }
 
-  // Every completed cycle also invites a new seedling while plots remain,
-  // so the garden fills from a comfortable pattern — not longer breaths.
   if (sessionPlants.length < PLOT_COUNT) {
     plantSeedling();
     if (sessionPlants.length < PLOT_COUNT && Math.random() < 0.4) {
       plantSeedling();
     }
   } else if (seedlings.length === 0) {
-    // All plots filled and grown: gently reshuffle one plant for a changing mix
     const idx = Math.floor(Math.random() * sessionPlants.length);
     const kind = choosePlantKind();
     sessionPlants[idx] = {
       kind,
       emoji: pickRandom(PLANT_KINDS[kind].emoji),
       stage: 1,
+      scale: Math.max(sessionPlants[idx].scale || 1, 1.1),
     };
   }
   renderPlants();
@@ -816,26 +852,39 @@ function spawnAnimals() {
   if (animalsAppeared) return;
   animalsAppeared = true;
   const sky = document.getElementById('sky');
-  const layer = document.getElementById('animalsLayer');
+  const airLayer = document.getElementById('animalsLayer');
+  const groundLayer = document.getElementById('animalsGroundLayer');
   if (sky) sky.classList.add('phase-animals');
-  if (!layer) return;
-  layer.innerHTML = '';
+  if (airLayer) airLayer.innerHTML = '';
+  if (groundLayer) groundLayer.innerHTML = '';
 
   // One animal visit per one-minute session.
   const visitor = pickRandom(ANIMALS);
   sessionAnimals = [visitor];
+  const flies = visitor.habitat === 'air';
+  const layer = flies ? airLayer : groundLayer;
+  if (!layer) return;
+
   const el = document.createElement('span');
-  el.className = 'visitor';
+  el.className = `visitor ${flies ? 'air' : 'ground'}`;
   el.textContent = visitor.emoji;
   el.title = visitor.name;
-  el.style.left = '44%';
-  el.style.top = '20%';
-  el.style.fontSize = '2rem';
+  if (flies) {
+    el.style.left = `${28 + Math.random() * 40}%`;
+    el.style.top = `${14 + Math.random() * 28}%`;
+  } else {
+    el.style.left = `${18 + Math.random() * 55}%`;
+    el.style.bottom = '2px';
+  }
   layer.appendChild(el);
   requestAnimationFrame(() => el.classList.add('show'));
 
   const prompt = document.getElementById('promptText');
-  if (prompt) prompt.textContent = `${visitor.name} is visiting your garden… keep the gentle pattern if you like.`;
+  if (prompt) {
+    prompt.textContent = flies
+      ? `${visitor.name} is flying over your garden… keep the gentle pattern if you like.`
+      : `${visitor.name} is visiting the garden floor… keep the gentle pattern if you like.`;
+  }
 }
 
 function awardCards() {
@@ -1071,11 +1120,13 @@ function resetGardenWorld() {
 
   const sky = document.getElementById('sky');
   const animals = document.getElementById('animalsLayer');
+  const animalsGround = document.getElementById('animalsGroundLayer');
   const wind = document.getElementById('windLayer');
   const neighbour = document.getElementById('neighbourPlot');
   const tray = document.getElementById('cardTray');
   if (sky) sky.classList.remove('phase-animals');
   if (animals) animals.innerHTML = '';
+  if (animalsGround) animalsGround.innerHTML = '';
   if (wind) {
     wind.classList.remove('active');
     wind.innerHTML = '';
@@ -1153,15 +1204,17 @@ function beginBonus() {
   const startBtn = document.getElementById('startGardenBtn');
   if (startBtn) startBtn.hidden = true;
   const prompt = document.getElementById('promptText');
-  if (prompt) prompt.textContent = 'Bonus cycle: inhale, exhale, then pause — wind will carry seeds next door.';
+  if (prompt) prompt.textContent = 'Bonus cycle: follow inhale 4, hold 4, exhale 8 — wind will carry seeds next door.';
   const bonusBtn = document.getElementById('bonusGardenBtn');
   if (bonusBtn) bonusBtn.disabled = true;
+  startBreathGuide();
   updateSessionHud();
   updateCloudGardenWeather();
 }
 
 function finishGarden() {
   if (gardenPhase === 'playing') return;
+  stopBreathGuide();
   if (gardenPhase === 'bonus') {
     // Ending early still keeps the same core reward (cards already awarded).
     gardenPhase = 'done';
@@ -1170,7 +1223,7 @@ function finishGarden() {
   gardenPhase = 'idle';
   const prompt = document.getElementById('promptText');
   if (prompt) {
-    prompt.textContent = 'Breathe gently. Inhale summons a cloud, exhale makes it rain, pause lets plants grow.';
+    prompt.textContent = 'Breathe gently. Inhale summons a cloud, hold lets it rest, exhale makes it rain.';
   }
   setGardenUIMode('idle');
   updateCloudGardenWeather();

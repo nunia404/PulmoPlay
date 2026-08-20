@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PulmoPlay - 9 Button Clarinet</title>
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 
@@ -137,22 +137,33 @@
 
       <div class="garden-world" id="gardenWorld">
         <div class="sky" id="sky">
+          <div class="sun" aria-hidden="true"></div>
+          <div class="sky-drift d1" aria-hidden="true"></div>
+          <div class="sky-drift d2" aria-hidden="true"></div>
+          <div class="horizon-hills" aria-hidden="true"></div>
           <div class="cloud" id="gardenCloud" aria-hidden="true">
             <span class="cloud-puff p1"></span>
             <span class="cloud-puff p2"></span>
             <span class="cloud-puff p3"></span>
+            <span class="cloud-puff p4"></span>
           </div>
           <div class="rain-layer" id="rainLayer"></div>
           <div class="wind-layer" id="windLayer" aria-hidden="true"></div>
-          <div class="animals-layer" id="animalsLayer"></div>
+          <div class="animals-layer animals-air" id="animalsLayer"></div>
         </div>
         <div class="garden-ground" id="gardenGround">
-          <div class="soil"></div>
+          <div class="grass-texture" aria-hidden="true"></div>
+          <div class="grass-tufts" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span>
+          </div>
           <div class="garden-plots" id="gardenPlots"></div>
+          <div class="animals-layer animals-ground" id="animalsGroundLayer"></div>
           <div class="neighbour-plot" id="neighbourPlot" hidden>
             <span class="neighbour-label">Neighbour plot</span>
             <div class="neighbour-plants" id="neighbourPlants"></div>
           </div>
+          <div class="soil" aria-hidden="true"></div>
         </div>
       </div>
 
@@ -204,6 +215,6 @@
   <p class="app-footer">Sound is synthesized live in the browser &mdash; no audio files needed. Pair your ESP32 as a Bluetooth keyboard and it plays both PulmoPlay games exactly the same way.</p>
 </main>
 
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>
