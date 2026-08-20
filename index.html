@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PulmoPlay - 9 Button Clarinet</title>
-<link rel="stylesheet" href="style.css?v=18">
+<link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
 
@@ -211,50 +211,33 @@
   </section>
 
   <section class="tab-panel" id="panel-lanes" data-panel="lanes" hidden>
-    <div class="lanes-console">
-      <h1 class="brand brand-lanes">Melody Lanes</h1>
-      <p class="lanes-tagline">Catch the falling bars on the baseline</p>
+    <div class="lanes-console ml-console">
+      <h1 class="brand brand-lanes">Musical Notes</h1>
+      <p class="lanes-tagline">Now playing: <strong id="mlSongTitle">สายทิพย์</strong></p>
+      <p class="lanes-tagline soft">Tap the colored bells when notes reach the black bar</p>
+      <p class="ml-ai-status" id="mlAiStatus">Keyboard mode (AI optional)</p>
 
-      <div class="screen" id="lanesScreen">
-        <div class="screen-row">
-          <div class="tile">
-            <span class="t-label">SCORE</span>
-            <span class="t-value" id="lanesScoreValue">0</span>
-          </div>
-          <div class="tile">
-            <span class="t-label">COMBO</span>
-            <span class="t-value" id="lanesComboValue">0</span>
-          </div>
+      <div class="ml-controls">
+        <button class="garden-cta" id="mlPlayBtn" type="button">Play</button>
+        <button class="garden-cta secondary" id="mlResetBtn" type="button">Reset</button>
+        <div class="ml-speed">
+          <button class="ml-speed-btn" id="mlSpeedDown" type="button" aria-label="Slower">&minus;</button>
+          <span id="mlSpeedValue">1.0×</span>
+          <button class="ml-speed-btn" id="mlSpeedUp" type="button" aria-label="Faster">+</button>
         </div>
-        <div class="screen-row">
-          <div class="tile">
-            <span class="t-label">HITS</span>
-            <span class="t-value" id="lanesHitsValue">0</span>
-          </div>
-          <div class="tile">
-            <span class="t-label">MISSES</span>
-            <span class="t-value" id="lanesMissesValue">0</span>
-          </div>
-        </div>
-        <div class="screen-row track-row">
-          <span class="t-label">JUDGE</span>
-          <span class="t-value track-name" id="lanesJudgeValue">Ready</span>
-        </div>
+        <div class="ml-stat"><span class="t-label">SCORE</span><span id="mlScore">0</span></div>
+        <div class="ml-stat"><span class="t-label">STREAK</span><span id="mlStreak">0</span></div>
       </div>
 
-      <div class="lanes-stage" id="lanesStage">
-        <div class="lanes-track" id="lanesTrack"></div>
-        <div class="lanes-baseline" id="lanesBaseline" aria-hidden="true">
-          <span class="baseline-glow"></span>
-        </div>
-        <div class="lanes-keys" id="lanesKeys"></div>
+      <div class="ml-stage" id="mlStage">
+        <div class="ml-countdown" id="mlCountdown" hidden>3</div>
+        <div class="ml-flash" id="mlFlash"></div>
+        <div class="ml-board" id="mlBoard"></div>
+        <div class="ml-falling-layer" id="mlFallingLayer"></div>
+        <div class="ml-black-bar" aria-hidden="true"></div>
       </div>
 
-      <div class="lanes-actions">
-        <button class="garden-cta" id="startLanesBtn" type="button">Start lanes</button>
-        <button class="garden-cta secondary" id="stopLanesBtn" type="button" hidden>Stop</button>
-      </div>
-      <p class="lanes-hint">Press the matching key when a colored bar reaches the glowing baseline: <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>&larr;</kbd><kbd>&rarr;</kbd><kbd>K</kbd><kbd>L</kbd><kbd>;</kbd></p>
+      <p class="lanes-hint">Keys: <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd>/<kbd>&larr;</kbd> <kbd>J</kbd>/<kbd>&rarr;</kbd> <kbd>K</kbd><kbd>L</kbd><kbd>;</kbd> — or play notes for AI scoring when the model is ready.</p>
     </div>
   </section>
 
@@ -263,6 +246,9 @@
   <p class="app-footer">Sound is synthesized live in the browser &mdash; no audio files needed. Pair your ESP32 as a Bluetooth keyboard and it plays both PulmoPlay games exactly the same way.</p>
 </main>
 
-<script src="app.js?v=18"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands@0.5.4/dist/speech-commands.min.js" defer></script>
+<script src="melody-lanes.js?v=1"></script>
+<script src="app.js?v=19"></script>
 </body>
 </html>

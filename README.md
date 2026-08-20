@@ -63,7 +63,7 @@ Cloud Garden only detects three states — inhale, pause, exhale — so it rewar
 
 **Melody Lanes tab**
 
-Colored bars fall down eight lanes toward a glowing **baseline**. Press the matching clarinet key (`A S D ← → K L ;`) when a bar reaches the line to score a hit. Missed bars that fall past the baseline count as misses. A short timed run tracks score, combo, hits, and misses.
+Port of the original melody-lanes game (`MusicGame` / `FallingNote` / `NoteLane` / `songs`): timed falling notes for **สายทิพย์**, black hit bar with colored bells, score/streak, speed control, countdown, optional Teachable Machine AI note recognition, plus keyboard (`A S D F/← J/→ K L ;`).
 
 ## ESP32 / Bluetooth breath sensor (optional)
 

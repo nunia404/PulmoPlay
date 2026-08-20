@@ -1318,215 +1318,6 @@ function setupCloudGardenUI() {
 }
 
 /* ---------------- Tab switching ---------------- */
-/* ---------------- Melody Lanes ----------------
-   Falling colored bars toward a glowing baseline. Hit the matching
-   clarinet key when a bar reaches the line. */
-const LANE_COLORS = [
-  'var(--note-c)', 'var(--note-d)', 'var(--note-e)', 'var(--note-f)',
-  'var(--note-g)', 'var(--note-a)', 'var(--note-b)', 'var(--note-c2)',
-];
-const LANE_FALL_MS = 2200;
-const LANE_HIT_WINDOW = 0.07; // fraction of track height around baseline
-const LANE_SPAWN_MS = 700;
-const LANE_SESSION_MS = 45_000;
-
-let lanesPlaying = false;
-let lanesRAF = null;
-let lanesBars = []; // { id, lane, el, spawnedAt, hit }
-let lanesScore = 0;
-let lanesCombo = 0;
-let lanesHits = 0;
-let lanesMisses = 0;
-let lanesStartedAt = 0;
-let lanesLastSpawnAt = 0;
-let lanesNextId = 1;
-let laneColumnEls = [];
-let laneKeyEls = [];
-
-function buildLanesUI() {
-  const track = document.getElementById('lanesTrack');
-  const keys = document.getElementById('lanesKeys');
-  if (!track || !keys) return;
-  track.innerHTML = '';
-  keys.innerHTML = '';
-  laneColumnEls = [];
-  laneKeyEls = [];
-  NOTES.forEach((note, i) => {
-    const col = document.createElement('div');
-    col.className = 'lane';
-    col.dataset.lane = String(i);
-    track.appendChild(col);
-    laneColumnEls[i] = col;
-
-    const key = document.createElement('div');
-    key.className = 'lane-key';
-    const label = i === NOTES.length - 1 ? `${note.name}’` : note.name;
-    key.innerHTML = `<span class="lane-note">${label}</span>${keyLabel(note.key)}`;
-    keys.appendChild(key);
-    laneKeyEls[i] = key;
-  });
-}
-
-function updateLanesHud(judgeText) {
-  const scoreEl = document.getElementById('lanesScoreValue');
-  const comboEl = document.getElementById('lanesComboValue');
-  const hitsEl = document.getElementById('lanesHitsValue');
-  const missEl = document.getElementById('lanesMissesValue');
-  const judgeEl = document.getElementById('lanesJudgeValue');
-  if (scoreEl) scoreEl.textContent = String(lanesScore);
-  if (comboEl) comboEl.textContent = String(lanesCombo);
-  if (hitsEl) hitsEl.textContent = String(lanesHits);
-  if (missEl) missEl.textContent = String(lanesMisses);
-  if (judgeEl && judgeText != null) judgeEl.textContent = judgeText;
-}
-
-function clearLanesBars() {
-  lanesBars.forEach(b => { if (b.el && b.el.parentNode) b.el.remove(); });
-  lanesBars = [];
-}
-
-function spawnLaneBar(laneIndex) {
-  const col = laneColumnEls[laneIndex];
-  if (!col) return;
-  const el = document.createElement('div');
-  el.className = 'lane-bar';
-  el.style.background = LANE_COLORS[laneIndex];
-  el.style.top = '0%';
-  col.appendChild(el);
-  lanesBars.push({
-    id: lanesNextId++,
-    lane: laneIndex,
-    el,
-    spawnedAt: performance.now(),
-    hit: false,
-  });
-}
-
-function barProgress(bar, now) {
-  return Math.min(1.15, (now - bar.spawnedAt) / LANE_FALL_MS);
-}
-
-function tryHitLane(laneIndex) {
-  if (laneKeyEls[laneIndex]) laneKeyEls[laneIndex].classList.add('active');
-  if (laneColumnEls[laneIndex]) {
-    laneColumnEls[laneIndex].classList.add('flash');
-    setTimeout(() => laneColumnEls[laneIndex]?.classList.remove('flash'), 120);
-  }
-  if (!lanesPlaying) return;
-
-  const now = performance.now();
-  let best = null;
-  let bestDist = Infinity;
-  lanesBars.forEach(bar => {
-    if (bar.hit || bar.lane !== laneIndex) return;
-    const p = barProgress(bar, now);
-    const dist = Math.abs(p - 1);
-    if (dist < bestDist) {
-      bestDist = dist;
-      best = bar;
-    }
-  });
-
-  if (best && bestDist <= LANE_HIT_WINDOW) {
-    best.hit = true;
-    if (best.el) best.el.remove();
-    lanesBars = lanesBars.filter(b => b.id !== best.id);
-    lanesHits += 1;
-    lanesCombo += 1;
-    const points = 100 + Math.min(50, lanesCombo * 5);
-    lanesScore += points;
-    updateLanesHud(lanesCombo > 4 ? 'Great!' : 'Nice');
-  } else {
-    lanesCombo = 0;
-    updateLanesHud('Early / Late');
-  }
-}
-
-function releaseLaneKey(laneIndex) {
-  if (laneKeyEls[laneIndex]) laneKeyEls[laneIndex].classList.remove('active');
-}
-
-function tickMelodyLanes() {
-  if (!lanesPlaying) return;
-  const now = performance.now();
-  const elapsed = now - lanesStartedAt;
-
-  // Spawn colored bars on a gentle rhythm — sometimes two at once.
-  if (now - lanesLastSpawnAt >= LANE_SPAWN_MS) {
-    lanesLastSpawnAt = now;
-    const lane = Math.floor(Math.random() * NOTES.length);
-    spawnLaneBar(lane);
-    if (Math.random() < 0.28) {
-      let other = Math.floor(Math.random() * NOTES.length);
-      if (other === lane) other = (other + 3) % NOTES.length;
-      spawnLaneBar(other);
-    }
-  }
-
-  // Move bars; miss if they fall past the baseline window.
-  const remaining = [];
-  lanesBars.forEach(bar => {
-    if (bar.hit) return;
-    const p = barProgress(bar, now);
-    if (bar.el) bar.el.style.top = `${(p * 100).toFixed(2)}%`;
-    if (p > 1 + LANE_HIT_WINDOW) {
-      if (bar.el) bar.el.remove();
-      lanesMisses += 1;
-      lanesCombo = 0;
-      updateLanesHud('Miss');
-    } else {
-      remaining.push(bar);
-    }
-  });
-  lanesBars = remaining;
-
-  if (elapsed >= LANE_SESSION_MS) {
-    stopMelodyLanes('Time!');
-    return;
-  }
-  lanesRAF = requestAnimationFrame(tickMelodyLanes);
-}
-
-function startMelodyLanes() {
-  ensureAudioContext();
-  if (lanesRAF) cancelAnimationFrame(lanesRAF);
-  clearLanesBars();
-  lanesPlaying = true;
-  lanesScore = 0;
-  lanesCombo = 0;
-  lanesHits = 0;
-  lanesMisses = 0;
-  lanesStartedAt = performance.now();
-  lanesLastSpawnAt = lanesStartedAt - LANE_SPAWN_MS;
-  updateLanesHud('Go!');
-  const startBtn = document.getElementById('startLanesBtn');
-  const stopBtn = document.getElementById('stopLanesBtn');
-  if (startBtn) startBtn.hidden = true;
-  if (stopBtn) stopBtn.hidden = false;
-  lanesRAF = requestAnimationFrame(tickMelodyLanes);
-}
-
-function stopMelodyLanes(reason) {
-  lanesPlaying = false;
-  if (lanesRAF) cancelAnimationFrame(lanesRAF);
-  lanesRAF = null;
-  clearLanesBars();
-  updateLanesHud(reason || 'Stopped');
-  const startBtn = document.getElementById('startLanesBtn');
-  const stopBtn = document.getElementById('stopLanesBtn');
-  if (startBtn) startBtn.hidden = false;
-  if (stopBtn) stopBtn.hidden = true;
-}
-
-function setupMelodyLanes() {
-  buildLanesUI();
-  updateLanesHud('Ready');
-  const startBtn = document.getElementById('startLanesBtn');
-  const stopBtn = document.getElementById('stopLanesBtn');
-  if (startBtn) startBtn.addEventListener('click', startMelodyLanes);
-  if (stopBtn) stopBtn.addEventListener('click', () => stopMelodyLanes('Stopped'));
-}
-
 function setupTabs() {
   const buttons = document.querySelectorAll('.tab-btn');
   buttons.forEach(btn => {
@@ -1541,7 +1332,7 @@ function setupTabs() {
       document.querySelectorAll('.tab-panel').forEach(panel => {
         panel.hidden = panel.dataset.panel !== tab;
       });
-      if (tab !== 'lanes' && lanesPlaying) stopMelodyLanes('Paused');
+      if (tab !== 'lanes' && window.MelodyLanes) MelodyLanes.stopIfLeavingTab();
     });
   });
 }
@@ -1577,11 +1368,11 @@ function setupKeyboard() {
     }
     if (e.repeat) return;
     const index = KEY_TO_INDEX[k];
+    // Melody Lanes uses its own note-key map (incl. F/J) from the original game.
+    if (activeTab === 'lanes' && window.MelodyLanes && MelodyLanes.handleKeyDown(e)) return;
     if (index === undefined) return;
     e.preventDefault();
-    // Finger keys: clarinet always sounds; Melody Lanes also checks hits.
     triggerNoteOn(index);
-    if (activeTab === 'lanes') tryHitLane(index);
   });
 
   window.addEventListener('keyup', e => {
@@ -1592,10 +1383,10 @@ function setupKeyboard() {
       return;
     }
     if (k === 'n' || k === 'arrowdown' || k === 'i') return; // breath mode only changes on the n / arrowdown / i keydown itself
+    if (activeTab === 'lanes' && window.MelodyLanes && MelodyLanes.handleKeyUp(e)) return;
     const index = KEY_TO_INDEX[k];
     if (index === undefined) return;
     triggerNoteOff(index);
-    if (activeTab === 'lanes') releaseLaneKey(index);
   });
 }
 
@@ -1695,7 +1486,7 @@ setupBreathTestButton();
 setupConsoleControls();
 setupTabs();
 setupCloudGardenUI();
-setupMelodyLanes();
+if (window.MelodyLanes) MelodyLanes.setup();
 buildRainLayer();
 updateBreathUI();
 updateTrackUI();
