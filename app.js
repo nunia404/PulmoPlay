@@ -300,15 +300,20 @@ function triggerNoteOn(index) {
   if (fingersDown.has(index)) return;
   ensureAudioContext();
   fingersDown.add(index);
-  noteButtons[index].classList.add('fingered');
-  if (!instrumentMuted) soundOn(index);
+  if (noteButtons[index]) noteButtons[index].classList.add('fingered');
+  // Melody Lanes always hears the instrument; breath mute is for Clarinet only.
+  if (!instrumentMuted || activeTab === 'lanes') soundOn(index);
 }
 
 function triggerNoteOff(index) {
   if (!fingersDown.has(index)) return;
   fingersDown.delete(index);
-  noteButtons[index].classList.remove('fingered');
+  if (noteButtons[index]) noteButtons[index].classList.remove('fingered');
   soundOff(index);
+}
+
+function releaseAllInstrumentNotes() {
+  Array.from(fingersDown).forEach(i => triggerNoteOff(i));
 }
 
 function soundOn(index) {
@@ -1385,12 +1390,24 @@ function setupTabs() {
         panel.hidden = panel.dataset.panel !== tab;
       });
       if (tab !== 'lanes' && window.MelodyLanes) MelodyLanes.stopIfLeavingTab();
+      if (tab !== 'lanes') releaseAllInstrumentNotes();
+      if (tab === 'lanes') {
+        // Clear any leftover inhale mute so ESP32 / test-button notes can sound.
+        instrumentMuted = false;
+        updateBreathUI();
+      }
     });
   });
 }
 
 const KEY_TO_INDEX = {};
 NOTES.forEach((n, i) => { KEY_TO_INDEX[n.key] = i; });
+
+// Melody Lanes uses F/J (and arrow aliases) for F/G — map those onto clarinet indices.
+const LANES_KEY_TO_INDEX = {
+  a: 0, s: 1, d: 2, f: 3, j: 4, k: 5, l: 6, ';': 7,
+  arrowleft: 3, arrowright: 4,
+};
 
 function setupKeyboard() {
   window.addEventListener('keydown', e => {
@@ -1419,9 +1436,17 @@ function setupKeyboard() {
       return;
     }
     if (e.repeat) return;
+
+    if (activeTab === 'lanes') {
+      if (window.MelodyLanes) MelodyLanes.handleKeyDown(e);
+      const lanesIndex = LANES_KEY_TO_INDEX[k];
+      if (lanesIndex === undefined) return;
+      e.preventDefault();
+      triggerNoteOn(lanesIndex);
+      return;
+    }
+
     const index = KEY_TO_INDEX[k];
-    // Melody Lanes uses its own note-key map (incl. F/J) from the original game.
-    if (activeTab === 'lanes' && window.MelodyLanes && MelodyLanes.handleKeyDown(e)) return;
     if (index === undefined) return;
     e.preventDefault();
     triggerNoteOn(index);
@@ -1435,7 +1460,15 @@ function setupKeyboard() {
       return;
     }
     if (k === 'n' || k === 'arrowdown' || k === 'i') return; // breath mode only changes on the n / arrowdown / i keydown itself
-    if (activeTab === 'lanes' && window.MelodyLanes && MelodyLanes.handleKeyUp(e)) return;
+
+    if (activeTab === 'lanes') {
+      if (window.MelodyLanes) MelodyLanes.handleKeyUp(e);
+      const lanesIndex = LANES_KEY_TO_INDEX[k];
+      if (lanesIndex === undefined) return;
+      triggerNoteOff(lanesIndex);
+      return;
+    }
+
     const index = KEY_TO_INDEX[k];
     if (index === undefined) return;
     triggerNoteOff(index);

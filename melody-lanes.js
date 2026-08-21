@@ -909,6 +909,7 @@
           `<button type="button" class="ml-bell${note === 'C_HIGH' ? ' high' : ''}" style="background:${NOTE_COLORS[note]}" data-note="${note}">${KEY_LABELS[index]}</button>` +
         `</div>`;
       lane.querySelector('.ml-bell').addEventListener('click', () => {
+        playToneNotes([note], 0.35);
         if (isPlaying) checkHit(note, 'manual');
       });
       board.appendChild(lane);
