@@ -515,6 +515,13 @@ let guideCompleteCycles = 0; // guided loops finished this session
 let guideLastTickAt = 0;
 let demoMode = false; // staff demo: one full cycle, then jump to finale
 let demoFinaleTriggered = false;
+let gardenGuideVoices = []; // soft phase tones (stop on phase change)
+
+const GARDEN_PHASE_TONES = {
+  inhale: [261.63], // C4
+  hold: [329.63], // E4
+  exhale: [261.63, 329.63, 392.00], // C4 E4 G4
+};
 
 function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -614,8 +621,51 @@ function updateGuideUI(progress01) {
   dot.style.transform = `scale(${scale.toFixed(3)})`;
 }
 
+function stopGardenGuideSound() {
+  if (!gardenGuideVoices.length) return;
+  const now = audioCtx ? audioCtx.currentTime : 0;
+  gardenGuideVoices.forEach(({ osc, gain }) => {
+    try {
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(Math.max(0.0001, gain.gain.value), now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+      osc.stop(now + 0.14);
+    } catch (e) { /* already stopped */ }
+  });
+  gardenGuideVoices = [];
+}
+
+// Soft guide tones: inhale = C, hold = E, exhale = C–E–G. Quiet pad for kids.
+function playGardenGuidePhaseSound(phase, seconds) {
+  ensureAudioContext();
+  stopGardenGuideSound();
+  const freqs = GARDEN_PHASE_TONES[phase];
+  if (!freqs || !freqs.length) return;
+
+  const now = audioCtx.currentTime;
+  const dur = Math.max(0.4, seconds || 4);
+  // Keep peak low; chords share the same budget so C–E–G isn't 3× louder.
+  const peak = freqs.length > 1 ? 0.028 : 0.045;
+
+  freqs.forEach(freq => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(peak, now + 0.18);
+    gain.gain.setValueAtTime(peak, now + Math.max(0.25, dur - 0.35));
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + dur + 0.05);
+    gardenGuideVoices.push({ osc, gain });
+  });
+}
+
 function stopBreathGuide() {
   guideRunning = false;
+  stopGardenGuideSound();
   if (guideRAF) {
     cancelAnimationFrame(guideRAF);
     guideRAF = null;
@@ -636,6 +686,7 @@ function startBreathGuide() {
   setGuideVisible(true);
   updateGuideUI(0);
   updateCloudGardenWeather();
+  playGardenGuidePhaseSound(guidePhase, guideSecondsLeft);
   guideRAF = requestAnimationFrame(tickBreathGuide);
 }
 
@@ -671,6 +722,7 @@ function tickBreathGuide() {
     guidePhase = next.phase;
     guideSecondsLeft = next.seconds;
     guidePhaseStartedAt = now;
+    playGardenGuidePhaseSound(guidePhase, guideSecondsLeft);
 
     // Completing exhale closes one guided cycle: grow the garden gently.
     if (finishedPhase === 'exhale') {
