@@ -34,7 +34,9 @@
   const AI_UI_DEDUP_MS = 1200;
   const AI_EVENT_COOLDOWN_MS = 1200;
 
-  // From songs.ts — สายทิพย์ at 70 BPM
+  // Song charts: `time` is the 1× onset in seconds. Falling notes reach the
+  // black bar at HIT_TIME, which is when the sound should start. Speed (e.g.
+  // 1.5× / 0.75×) scales musical time via time/speed so hits stay on the bar.
   const songs = [
     {
       id: 'sai-thip',
@@ -134,9 +136,274 @@
         { notes: ['E', 'G'], time: 42.857, duration: 0.857 },
       ],
     },
+    {
+      id: 'yue-liang',
+      title: '月亮代表我的心',
+      artist: '邓丽君',
+      bpm: 76,
+      notes: [
+        // Intro (前奏 5 6 1̇ 2̇ | 1̇ 6 5 3 | …) — 2̇ folded to D
+        { note: 'G', time: 0.0, duration: 0.789 },
+        { note: 'A', time: 0.789, duration: 0.789 },
+        { note: 'C_HIGH', time: 1.579, duration: 0.789 },
+        { note: 'D', time: 2.368, duration: 0.789 },
+        { note: 'C_HIGH', time: 3.158, duration: 0.789 },
+        { note: 'A', time: 3.947, duration: 0.789 },
+        { note: 'G', time: 4.737, duration: 0.789 },
+        { note: 'E', time: 5.526, duration: 0.789 },
+        { note: 'G', time: 6.316, duration: 0.789 },
+        { note: 'A', time: 7.105, duration: 0.789 },
+        { note: 'C_HIGH', time: 7.895, duration: 0.789 },
+        { note: 'D', time: 8.684, duration: 0.789 },
+        { note: 'C_HIGH', time: 9.474, duration: 3.158 },
+        // Verse 1 — 你问我爱你有多深 / 我爱你有几分 (3 5 6. 1̇ | 6 5 3 5 | 6. 1̇ 6 5 | 3 - - -)
+        { note: 'E', time: 12.632, duration: 0.789 },
+        { note: 'G', time: 13.421, duration: 0.789 },
+        { note: 'A', time: 14.211, duration: 1.184 },
+        { note: 'C_HIGH', time: 15.395, duration: 0.395 },
+        { note: 'A', time: 15.789, duration: 0.789 },
+        { note: 'G', time: 16.579, duration: 0.789 },
+        { note: 'E', time: 17.368, duration: 0.789 },
+        { note: 'G', time: 18.158, duration: 0.789 },
+        { note: 'A', time: 18.947, duration: 1.184 },
+        { note: 'C_HIGH', time: 20.132, duration: 0.395 },
+        { note: 'A', time: 20.526, duration: 0.789 },
+        { note: 'G', time: 21.316, duration: 0.789 },
+        { note: 'E', time: 22.105, duration: 3.158 },
+        // Verse 1 — 我的情也真 / 我的爱也真 (1 3 5. 6 | 5 3 1 3 | 5. 6 5 3 | 2 - - -)
+        { note: 'C', time: 25.263, duration: 0.789 },
+        { note: 'E', time: 26.053, duration: 0.789 },
+        { note: 'G', time: 26.842, duration: 1.184 },
+        { note: 'A', time: 28.026, duration: 0.395 },
+        { note: 'G', time: 28.421, duration: 0.789 },
+        { note: 'E', time: 29.211, duration: 0.789 },
+        { note: 'C', time: 30.0, duration: 0.789 },
+        { note: 'E', time: 30.789, duration: 0.789 },
+        { note: 'G', time: 31.579, duration: 1.184 },
+        { note: 'A', time: 32.763, duration: 0.395 },
+        { note: 'G', time: 33.158, duration: 0.789 },
+        { note: 'E', time: 33.947, duration: 0.789 },
+        { note: 'D', time: 34.737, duration: 3.158 },
+        // Verse 1 — 月亮代表我的心 (5. 6 5 3 | 2. 3 2 1 | 6, 1 2 3 | 1 - - -) — low 6 folded up to A
+        { note: 'G', time: 37.895, duration: 1.184 },
+        { note: 'A', time: 39.079, duration: 0.395 },
+        { note: 'G', time: 39.474, duration: 0.789 },
+        { note: 'E', time: 40.263, duration: 0.789 },
+        { note: 'D', time: 41.053, duration: 1.184 },
+        { note: 'E', time: 42.237, duration: 0.395 },
+        { note: 'D', time: 42.632, duration: 0.789 },
+        { note: 'C', time: 43.421, duration: 0.789 },
+        { note: 'A', time: 44.211, duration: 0.789 },
+        { note: 'C', time: 45.0, duration: 0.789 },
+        { note: 'D', time: 45.789, duration: 0.789 },
+        { note: 'E', time: 46.579, duration: 0.789 },
+        { note: 'C', time: 47.368, duration: 3.158 },
+        // Verse 2 — 你问我爱你有多深 / 我爱你有几分
+        { note: 'E', time: 50.526, duration: 0.789 },
+        { note: 'G', time: 51.316, duration: 0.789 },
+        { note: 'A', time: 52.105, duration: 1.184 },
+        { note: 'C_HIGH', time: 53.289, duration: 0.395 },
+        { note: 'A', time: 53.684, duration: 0.789 },
+        { note: 'G', time: 54.474, duration: 0.789 },
+        { note: 'E', time: 55.263, duration: 0.789 },
+        { note: 'G', time: 56.053, duration: 0.789 },
+        { note: 'A', time: 56.842, duration: 1.184 },
+        { note: 'C_HIGH', time: 58.026, duration: 0.395 },
+        { note: 'A', time: 58.421, duration: 0.789 },
+        { note: 'G', time: 59.211, duration: 0.789 },
+        { note: 'E', time: 60.0, duration: 3.158 },
+        // Verse 2 — 我的情不移 / 我的爱不变
+        { note: 'C', time: 63.158, duration: 0.789 },
+        { note: 'E', time: 63.947, duration: 0.789 },
+        { note: 'G', time: 64.737, duration: 1.184 },
+        { note: 'A', time: 65.921, duration: 0.395 },
+        { note: 'G', time: 66.316, duration: 0.789 },
+        { note: 'E', time: 67.105, duration: 0.789 },
+        { note: 'C', time: 67.895, duration: 0.789 },
+        { note: 'E', time: 68.684, duration: 0.789 },
+        { note: 'G', time: 69.474, duration: 1.184 },
+        { note: 'A', time: 70.658, duration: 0.395 },
+        { note: 'G', time: 71.053, duration: 0.789 },
+        { note: 'E', time: 71.842, duration: 0.789 },
+        { note: 'D', time: 72.632, duration: 3.158 },
+        // Verse 2 — 月亮代表我的心
+        { note: 'G', time: 75.789, duration: 1.184 },
+        { note: 'A', time: 76.974, duration: 0.395 },
+        { note: 'G', time: 77.368, duration: 0.789 },
+        { note: 'E', time: 78.158, duration: 0.789 },
+        { note: 'D', time: 78.947, duration: 1.184 },
+        { note: 'E', time: 80.132, duration: 0.395 },
+        { note: 'D', time: 80.526, duration: 0.789 },
+        { note: 'C', time: 81.316, duration: 0.789 },
+        { note: 'A', time: 82.105, duration: 0.789 },
+        { note: 'C', time: 82.895, duration: 0.789 },
+        { note: 'D', time: 83.684, duration: 0.789 },
+        { note: 'E', time: 84.474, duration: 0.789 },
+        { note: 'C', time: 85.263, duration: 3.158 },
+        // Chorus — 轻轻的一个吻 / 已经打动我的心 (ends 1̇ - - 6)
+        { note: 'E', time: 88.421, duration: 0.789 },
+        { note: 'G', time: 89.211, duration: 0.789 },
+        { note: 'A', time: 90.0, duration: 1.184 },
+        { note: 'C_HIGH', time: 91.184, duration: 0.395 },
+        { note: 'A', time: 91.579, duration: 0.789 },
+        { note: 'G', time: 92.368, duration: 0.789 },
+        { note: 'E', time: 93.158, duration: 0.789 },
+        { note: 'G', time: 93.947, duration: 0.789 },
+        { note: 'A', time: 94.737, duration: 1.184 },
+        { note: 'C_HIGH', time: 95.921, duration: 0.395 },
+        { note: 'A', time: 96.316, duration: 0.789 },
+        { note: 'G', time: 97.105, duration: 0.789 },
+        { note: 'C_HIGH', time: 97.895, duration: 2.368 },
+        { note: 'A', time: 100.263, duration: 0.789 },
+        // Chorus — 深深的一段情 / 教我思念到如今
+        { note: 'C', time: 101.053, duration: 0.789 },
+        { note: 'E', time: 101.842, duration: 0.789 },
+        { note: 'G', time: 102.632, duration: 1.184 },
+        { note: 'A', time: 103.816, duration: 0.395 },
+        { note: 'G', time: 104.211, duration: 0.789 },
+        { note: 'E', time: 105.0, duration: 0.789 },
+        { note: 'C', time: 105.789, duration: 0.789 },
+        { note: 'E', time: 106.579, duration: 0.789 },
+        { note: 'G', time: 107.368, duration: 1.184 },
+        { note: 'A', time: 108.553, duration: 0.395 },
+        { note: 'G', time: 108.947, duration: 0.789 },
+        { note: 'E', time: 109.737, duration: 0.789 },
+        { note: 'D', time: 110.526, duration: 3.158 },
+        // Chorus — 月亮代表我的心
+        { note: 'G', time: 113.684, duration: 1.184 },
+        { note: 'A', time: 114.868, duration: 0.395 },
+        { note: 'G', time: 115.263, duration: 0.789 },
+        { note: 'E', time: 116.053, duration: 0.789 },
+        { note: 'D', time: 116.842, duration: 1.184 },
+        { note: 'E', time: 118.026, duration: 0.395 },
+        { note: 'D', time: 118.421, duration: 0.789 },
+        { note: 'C', time: 119.211, duration: 0.789 },
+        { note: 'A', time: 120.0, duration: 0.789 },
+        { note: 'C', time: 120.789, duration: 0.789 },
+        { note: 'D', time: 121.579, duration: 0.789 },
+        { note: 'E', time: 122.368, duration: 0.789 },
+        { note: 'C', time: 123.158, duration: 3.158 },
+        // Ending — 月亮代表我的心
+        { note: 'G', time: 126.316, duration: 1.184 },
+        { note: 'A', time: 127.5, duration: 0.395 },
+        { note: 'G', time: 127.895, duration: 0.789 },
+        { note: 'E', time: 128.684, duration: 0.789 },
+        { note: 'D', time: 129.474, duration: 1.184 },
+        { note: 'E', time: 130.658, duration: 0.395 },
+        { note: 'D', time: 131.053, duration: 0.789 },
+        { note: 'C', time: 131.842, duration: 0.789 },
+        { note: 'A', time: 132.632, duration: 0.789 },
+        { note: 'C', time: 133.421, duration: 0.789 },
+        { note: 'D', time: 134.211, duration: 0.789 },
+        { note: 'E', time: 135.0, duration: 0.789 },
+        { note: 'C', time: 135.789, duration: 3.158 },
+      ],
+      backingTrack: [
+        // Intro C | G | C | C
+        { notes: ['C', 'E'], time: 0.0, duration: 1.579 },
+        { notes: ['C', 'E'], time: 1.579, duration: 1.579 },
+        { notes: ['G', 'B'], time: 3.158, duration: 1.579 },
+        { notes: ['G', 'B'], time: 4.737, duration: 1.579 },
+        { notes: ['C', 'E'], time: 6.316, duration: 1.579 },
+        { notes: ['C', 'E'], time: 7.895, duration: 1.579 },
+        { notes: ['C', 'E'], time: 9.474, duration: 1.579 },
+        { notes: ['C', 'E'], time: 11.053, duration: 1.579 },
+        // Verse 1 C | Em | F | G
+        { notes: ['C', 'E'], time: 12.632, duration: 1.579 },
+        { notes: ['C', 'E'], time: 14.211, duration: 1.579 },
+        { notes: ['E', 'G'], time: 15.789, duration: 1.579 },
+        { notes: ['E', 'G'], time: 17.368, duration: 1.579 },
+        { notes: ['F', 'A'], time: 18.947, duration: 1.579 },
+        { notes: ['F', 'A'], time: 20.526, duration: 1.579 },
+        { notes: ['G', 'B'], time: 22.105, duration: 1.579 },
+        { notes: ['G', 'B'], time: 23.684, duration: 1.579 },
+        // Verse 1 C | Em | F | G
+        { notes: ['C', 'E'], time: 25.263, duration: 1.579 },
+        { notes: ['C', 'E'], time: 26.842, duration: 1.579 },
+        { notes: ['E', 'G'], time: 28.421, duration: 1.579 },
+        { notes: ['E', 'G'], time: 30.0, duration: 1.579 },
+        { notes: ['F', 'A'], time: 31.579, duration: 1.579 },
+        { notes: ['F', 'A'], time: 33.158, duration: 1.579 },
+        { notes: ['G', 'B'], time: 34.737, duration: 1.579 },
+        { notes: ['G', 'B'], time: 36.316, duration: 1.579 },
+        // Cadence Am | Dm | G | C
+        { notes: ['A', 'C'], time: 37.895, duration: 1.579 },
+        { notes: ['A', 'C'], time: 39.474, duration: 1.579 },
+        { notes: ['D', 'F'], time: 41.053, duration: 1.579 },
+        { notes: ['D', 'F'], time: 42.632, duration: 1.579 },
+        { notes: ['G', 'B'], time: 44.211, duration: 1.579 },
+        { notes: ['G', 'B'], time: 45.789, duration: 1.579 },
+        { notes: ['C', 'E'], time: 47.368, duration: 1.579 },
+        { notes: ['C', 'E'], time: 48.947, duration: 1.579 },
+        // Verse 2 C | Em | F | G
+        { notes: ['C', 'E'], time: 50.526, duration: 1.579 },
+        { notes: ['C', 'E'], time: 52.105, duration: 1.579 },
+        { notes: ['E', 'G'], time: 53.684, duration: 1.579 },
+        { notes: ['E', 'G'], time: 55.263, duration: 1.579 },
+        { notes: ['F', 'A'], time: 56.842, duration: 1.579 },
+        { notes: ['F', 'A'], time: 58.421, duration: 1.579 },
+        { notes: ['G', 'B'], time: 60.0, duration: 1.579 },
+        { notes: ['G', 'B'], time: 61.579, duration: 1.579 },
+        // Verse 2 C | Em | F | G
+        { notes: ['C', 'E'], time: 63.158, duration: 1.579 },
+        { notes: ['C', 'E'], time: 64.737, duration: 1.579 },
+        { notes: ['E', 'G'], time: 66.316, duration: 1.579 },
+        { notes: ['E', 'G'], time: 67.895, duration: 1.579 },
+        { notes: ['F', 'A'], time: 69.474, duration: 1.579 },
+        { notes: ['F', 'A'], time: 71.053, duration: 1.579 },
+        { notes: ['G', 'B'], time: 72.632, duration: 1.579 },
+        { notes: ['G', 'B'], time: 74.211, duration: 1.579 },
+        // Cadence Am | Dm | G | C
+        { notes: ['A', 'C'], time: 75.789, duration: 1.579 },
+        { notes: ['A', 'C'], time: 77.368, duration: 1.579 },
+        { notes: ['D', 'F'], time: 78.947, duration: 1.579 },
+        { notes: ['D', 'F'], time: 80.526, duration: 1.579 },
+        { notes: ['G', 'B'], time: 82.105, duration: 1.579 },
+        { notes: ['G', 'B'], time: 83.684, duration: 1.579 },
+        { notes: ['C', 'E'], time: 85.263, duration: 1.579 },
+        { notes: ['C', 'E'], time: 86.842, duration: 1.579 },
+        // Chorus C | Em | F | G
+        { notes: ['C', 'E'], time: 88.421, duration: 1.579 },
+        { notes: ['C', 'E'], time: 90.0, duration: 1.579 },
+        { notes: ['E', 'G'], time: 91.579, duration: 1.579 },
+        { notes: ['E', 'G'], time: 93.158, duration: 1.579 },
+        { notes: ['F', 'A'], time: 94.737, duration: 1.579 },
+        { notes: ['F', 'A'], time: 96.316, duration: 1.579 },
+        { notes: ['G', 'B'], time: 97.895, duration: 1.579 },
+        { notes: ['G', 'B'], time: 99.474, duration: 1.579 },
+        // Chorus C | Em | F | G
+        { notes: ['C', 'E'], time: 101.053, duration: 1.579 },
+        { notes: ['C', 'E'], time: 102.632, duration: 1.579 },
+        { notes: ['E', 'G'], time: 104.211, duration: 1.579 },
+        { notes: ['E', 'G'], time: 105.789, duration: 1.579 },
+        { notes: ['F', 'A'], time: 107.368, duration: 1.579 },
+        { notes: ['F', 'A'], time: 108.947, duration: 1.579 },
+        { notes: ['G', 'B'], time: 110.526, duration: 1.579 },
+        { notes: ['G', 'B'], time: 112.105, duration: 1.579 },
+        // Cadence Am | Dm | G | C
+        { notes: ['A', 'C'], time: 113.684, duration: 1.579 },
+        { notes: ['A', 'C'], time: 115.263, duration: 1.579 },
+        { notes: ['D', 'F'], time: 116.842, duration: 1.579 },
+        { notes: ['D', 'F'], time: 118.421, duration: 1.579 },
+        { notes: ['G', 'B'], time: 120.0, duration: 1.579 },
+        { notes: ['G', 'B'], time: 121.579, duration: 1.579 },
+        { notes: ['C', 'E'], time: 123.158, duration: 1.579 },
+        { notes: ['C', 'E'], time: 124.737, duration: 1.579 },
+        // Ending Am | Dm | G | C
+        { notes: ['A', 'C'], time: 126.316, duration: 1.579 },
+        { notes: ['A', 'C'], time: 127.895, duration: 1.579 },
+        { notes: ['D', 'F'], time: 129.474, duration: 1.579 },
+        { notes: ['D', 'F'], time: 131.053, duration: 1.579 },
+        { notes: ['G', 'B'], time: 132.632, duration: 1.579 },
+        { notes: ['G', 'B'], time: 134.211, duration: 1.579 },
+        { notes: ['C', 'E'], time: 135.789, duration: 1.579 },
+        { notes: ['C', 'E'], time: 137.368, duration: 1.579 },
+      ],
+    },
+
   ];
 
-  const currentSong = songs[0];
+  let currentSong = songs[0];
 
   let isPlaying = false;
   let countdown = null;
@@ -215,13 +482,16 @@
     const scoreEl = $('mlScore');
     const streakEl = $('mlStreak');
     const speedEl = $('mlSpeedValue');
-    const songEl = $('mlSongTitle');
+    const songEl = $('mlSongSelect');
     const flashEl = $('mlFlash');
     const aiEl = $('mlAiStatus');
     if (scoreEl) scoreEl.textContent = String(score);
     if (streakEl) streakEl.textContent = String(streak);
     if (speedEl) speedEl.textContent = `${speed.toFixed(1)}×`;
-    if (songEl) songEl.textContent = currentSong.title;
+    if (songEl) {
+      songEl.value = currentSong.id;
+      songEl.disabled = isPlaying || countdown != null;
+    }
     if (flashEl && flash != null) {
       flashEl.textContent = flash;
       flashEl.classList.add('show');
@@ -624,8 +894,24 @@
     });
   }
 
+  function setupSongSelect() {
+    const select = $('mlSongSelect');
+    if (!select) return;
+    select.innerHTML = songs.map(song =>
+      `<option value="${song.id}">${song.title}</option>`
+    ).join('');
+    select.value = currentSong.id;
+    select.addEventListener('change', () => {
+      const next = songs.find(song => song.id === select.value);
+      if (!next || next === currentSong) return;
+      currentSong = next;
+      resetGame();
+    });
+  }
+
   function setupMelodyLanes() {
     buildBoard();
+    setupSongSelect();
     updateHud();
 
     $('mlPlayBtn')?.addEventListener('click', togglePlay);

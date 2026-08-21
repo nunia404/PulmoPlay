@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PulmoPlay - 9 Button Clarinet</title>
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
 
@@ -213,7 +213,9 @@
   <section class="tab-panel" id="panel-lanes" data-panel="lanes" hidden>
     <div class="lanes-console ml-console">
       <h1 class="brand brand-lanes">Musical Notes</h1>
-      <p class="lanes-tagline">Now playing: <strong id="mlSongTitle">สายทิพย์</strong></p>
+      <p class="lanes-tagline">Now playing:
+        <select id="mlSongSelect" class="ml-song-select" aria-label="Choose a song"></select>
+      </p>
       <p class="lanes-tagline soft">Tap the colored bells when notes reach the black bar</p>
       <p class="ml-ai-status" id="mlAiStatus">Keyboard mode (AI optional)</p>
 
@@ -248,7 +250,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands@0.5.4/dist/speech-commands.min.js" defer></script>
-<script src="melody-lanes.js?v=1"></script>
+<script src="melody-lanes.js?v=2"></script>
 <script src="app.js?v=19"></script>
 </body>
 </html>

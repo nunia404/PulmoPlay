@@ -1188,6 +1188,22 @@ body{
   font-size:.82rem;
   color:var(--ink-soft);
 }
+.ml-song-select{
+  margin-left:6px;
+  max-width:min(100%, 280px);
+  padding:4px 10px;
+  border:1px solid rgba(58,44,30,.25);
+  border-radius:10px;
+  background:rgba(255,255,255,.7);
+  color:var(--ink);
+  font:inherit;
+  font-weight:700;
+  cursor:pointer;
+}
+.ml-song-select:disabled{
+  opacity:.65;
+  cursor:not-allowed;
+}
 .lanes-tagline.soft{margin-bottom:8px; font-size:.75rem;}
 .ml-ai-status{
   margin:0 0 12px;
