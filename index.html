@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PulmoPlay - 9 Button Clarinet</title>
-<link rel="stylesheet" href="style.css?v=21">
+<link rel="stylesheet" href="style.css?v=22">
 </head>
 <body>
 
@@ -106,36 +106,6 @@
   <section class="tab-panel" id="panel-garden" data-panel="garden" hidden>
     <div class="garden-console">
 
-      <h1 class="brand brand-garden">Cloud Garden</h1>
-      <p class="garden-tagline">One minute of gentle weather for a magical garden</p>
-
-      <div class="screen" id="gardenScreen">
-        <div class="screen-row">
-          <div class="tile">
-            <span class="t-label">BREATH</span>
-            <span class="t-value breath-value" id="breathValueGarden"><i class="breath-dot" id="breathDotGarden"></i><span id="breathTextGarden">PAUSE</span></span>
-          </div>
-          <div class="tile">
-            <span class="t-label">TIME LEFT</span>
-            <span class="t-value" id="sessionTimeValue">1:00</span>
-          </div>
-        </div>
-        <div class="screen-row">
-          <div class="tile">
-            <span class="t-label">CYCLES</span>
-            <span class="t-value" id="cycleValue">0</span>
-          </div>
-          <div class="tile">
-            <span class="t-label">RESTS</span>
-            <span class="t-value" id="restValue">0</span>
-          </div>
-        </div>
-        <div class="screen-row track-row">
-          <span class="t-label">PATTERN</span>
-          <span class="t-value track-name" id="patternHint">Inhale 4 · Hold 4 · Exhale 8</span>
-        </div>
-      </div>
-
       <div class="garden-world" id="gardenWorld">
         <div class="sky" id="sky">
           <div class="sun" aria-hidden="true"></div>
@@ -168,6 +138,37 @@
           <div class="soil" aria-hidden="true"></div>
         </div>
 
+        <div class="garden-hud" id="gardenHud">
+          <div class="garden-hud-brand">
+            <h1 class="brand brand-garden">Cloud Garden</h1>
+            <p class="garden-tagline" id="gardenTagline">One minute of gentle weather</p>
+          </div>
+          <div class="screen garden-screen" id="gardenScreen">
+            <div class="screen-row">
+              <div class="tile">
+                <span class="t-label">BREATH</span>
+                <span class="t-value breath-value" id="breathValueGarden"><i class="breath-dot" id="breathDotGarden"></i><span id="breathTextGarden">PAUSE</span></span>
+              </div>
+              <div class="tile">
+                <span class="t-label">TIME</span>
+                <span class="t-value" id="sessionTimeValue">1:00</span>
+              </div>
+              <div class="tile">
+                <span class="t-label">CYCLES</span>
+                <span class="t-value" id="cycleValue">0</span>
+              </div>
+              <div class="tile">
+                <span class="t-label">RESTS</span>
+                <span class="t-value" id="restValue">0</span>
+              </div>
+            </div>
+            <div class="screen-row track-row">
+              <span class="t-label">PATTERN</span>
+              <span class="t-value track-name" id="patternHint">Inhale 4 · Hold 4 · Exhale 8</span>
+            </div>
+          </div>
+        </div>
+
         <div class="breath-guide" id="breathGuide" hidden aria-live="polite">
           <span class="guide-dot" id="guideDot" aria-hidden="true"></span>
           <p class="guide-text" id="guideText">Inhale for 4</p>
@@ -175,39 +176,45 @@
         <p class="garden-break-msg" id="gardenBreakMsg" hidden>
           Having a break? No worries, we'll start from the beginning of the breath you paused.
         </p>
-      </div>
 
-      <div class="garden-prompt" id="gardenPrompt">
-        <p class="prompt-text" id="promptText">Breathe gently. Inhale summons a cloud, hold lets it rest, exhale makes it rain.</p>
-        <button class="garden-cta" id="startGardenBtn" type="button">Start 1-minute garden</button>
-        <button class="demo-skip-btn" id="demoSkipBtn" type="button" title="For staff demos only — one breath cycle, then final 4 seconds. Not for patients.">Demo version</button>
-      </div>
+        <div class="collection-strip" id="collectionStrip">
+          <span class="collection-label">Animal cards</span>
+          <div class="collection-cards" id="collectionCards"></div>
+        </div>
 
-      <div class="garden-end" id="gardenEnd" hidden>
-        <h2 class="end-title">Your garden bloomed!</h2>
-        <p class="end-sub" id="endBiomeLabel">Meadow biome</p>
-        <div class="card-tray" id="cardTray" aria-live="polite"></div>
-        <div class="comfort-block" id="comfortBlock">
-          <p class="comfort-label">How did that feel? <span class="optional">(optional)</span></p>
-          <div class="comfort-row" id="comfortRow">
-            <button type="button" class="comfort-btn" data-comfort="1" aria-label="A bit hard">1</button>
-            <button type="button" class="comfort-btn" data-comfort="2" aria-label="Okay">2</button>
-            <button type="button" class="comfort-btn" data-comfort="3" aria-label="Comfortable">3</button>
-            <button type="button" class="comfort-btn" data-comfort="4" aria-label="Easy">4</button>
-            <button type="button" class="comfort-btn" data-comfort="5" aria-label="Very easy">5</button>
+        <div class="garden-prompt" id="gardenPrompt">
+          <p class="prompt-text" id="promptText">Breathe gently. Inhale summons a cloud, hold lets it rest, exhale makes it rain.</p>
+          <button class="garden-cta" id="startGardenBtn" type="button">Start 1-minute garden</button>
+          <button class="demo-skip-btn" id="demoSkipBtn" type="button" title="For staff demos only — one breath cycle, then final 4 seconds. Not for patients.">Demo version</button>
+        </div>
+
+        <div class="garden-end-backdrop" id="gardenEndBackdrop" hidden></div>
+        <div class="garden-end" id="gardenEnd" hidden role="dialog" aria-modal="true" aria-labelledby="endTitle">
+          <h2 class="end-title" id="endTitle">Your garden bloomed!</h2>
+          <p class="end-sub" id="endBiomeLabel">Meadow biome</p>
+          <div class="card-tray" id="cardTray" aria-live="polite"></div>
+          <div class="tally-toast" id="tallyToast" hidden aria-live="polite"></div>
+          <div class="comfort-block" id="comfortBlock">
+            <p class="comfort-label">How did that feel? <span class="optional">(optional)</span></p>
+            <div class="comfort-row" id="comfortRow">
+              <button type="button" class="comfort-btn" data-comfort="1" aria-label="A bit hard">1</button>
+              <button type="button" class="comfort-btn" data-comfort="2" aria-label="Okay">2</button>
+              <button type="button" class="comfort-btn" data-comfort="3" aria-label="Comfortable">3</button>
+              <button type="button" class="comfort-btn" data-comfort="4" aria-label="Easy">4</button>
+              <button type="button" class="comfort-btn" data-comfort="5" aria-label="Very easy">5</button>
+            </div>
           </div>
+          <p class="session-note" id="sessionNote"></p>
+          <div class="end-actions">
+            <button class="garden-cta" id="bonusGardenBtn" type="button">
+              <kbd class="key-chip">F</kbd> Continue — wind bonus
+            </button>
+            <button class="garden-cta secondary" id="finishGardenBtn" type="button">
+              <kbd class="key-chip">G</kbd> Stop — keep cards
+            </button>
+          </div>
+          <p class="bonus-hint" id="bonusHint">Press <strong>F</strong> to continue with a bonus breath, or <strong>G</strong> to stop.</p>
         </div>
-        <p class="session-note" id="sessionNote"></p>
-        <div class="end-actions">
-          <button class="garden-cta" id="finishGardenBtn" type="button">Keep cards &amp; finish</button>
-          <button class="garden-cta secondary" id="bonusGardenBtn" type="button">Bonus: send seeds on the wind</button>
-        </div>
-        <p class="bonus-hint" id="bonusHint">Optional: one more breath cycle sends wind carrying seeds to a neighbouring plot.</p>
-      </div>
-
-      <div class="collection-strip" id="collectionStrip">
-        <span class="collection-label">Animal cards</span>
-        <div class="collection-cards" id="collectionCards"></div>
       </div>
 
     </div>
@@ -254,6 +261,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands@0.5.4/dist/speech-commands.min.js" defer></script>
 <script src="melody-lanes.js?v=4"></script>
-<script src="app.js?v=22"></script>
+<script src="app.js?v=23"></script>
 </body>
 </html>

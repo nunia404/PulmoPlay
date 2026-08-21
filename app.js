@@ -600,9 +600,15 @@ function updateSessionHud() {
   if (restEl) restEl.textContent = String(restCount);
 
   if (gardenPhase === 'playing') {
-    const left = SESSION_MS - (performance.now() - sessionStartedAt);
+    let elapsed = performance.now() - sessionStartedAt;
+    if (gardenBreathBreak && gardenBreakPauseStartedAt != null) {
+      elapsed -= performance.now() - gardenBreakPauseStartedAt;
+    }
+    const left = SESSION_MS - elapsed;
     if (timeEl) timeEl.textContent = formatTimeLeft(left);
-    if (hintEl) hintEl.textContent = 'Inhale 4 · Hold 4 · Exhale 8';
+    if (hintEl) hintEl.textContent = gardenBreathBreak
+      ? 'Take your time — resume when ready'
+      : 'Inhale 4 · Hold 4 · Exhale 8';
   } else if (gardenPhase === 'bonus') {
     if (timeEl) timeEl.textContent = 'Bonus';
     if (hintEl) hintEl.textContent = 'Bonus: Inhale 4 · Hold 4 · Exhale 8';
@@ -1079,9 +1085,11 @@ function awardCards() {
   const animal = sessionAnimals[0] || pickRandom(ANIMALS);
   const card = rollAnimalCard(animal, sessionBiome);
   earnedCards = [card];
-  if (!cardCollection[card.id]) {
+  const isNew = !cardCollection[card.id];
+  if (isNew) {
     cardCollection[card.id] = { name: card.name, emoji: card.emoji, count: 0, bestRarity: card.rarity };
   }
+  const prevCount = cardCollection[card.id].count;
   cardCollection[card.id].count += 1;
   if (RARITY_RANK[card.rarity] > RARITY_RANK[cardCollection[card.id].bestRarity]) {
     cardCollection[card.id].bestRarity = card.rarity;
@@ -1099,7 +1107,64 @@ function awardCards() {
       `<span class="card-rarity">${RARITY_LABEL[card.rarity]}</span>`;
     tray.appendChild(el);
   }
+
+  showTallyToast(card, isNew, prevCount + 1);
   renderCollection();
+  requestAnimationFrame(() => animateCollectionTally(card, isNew));
+}
+
+function showTallyToast(card, isNew, newCount) {
+  const toast = document.getElementById('tallyToast');
+  if (!toast) return;
+  toast.hidden = false;
+  toast.classList.toggle('is-new', isNew);
+  toast.textContent = isNew
+    ? `New card! ${card.emoji} ${card.name} joined your collection`
+    : `${card.emoji} ${card.name} ×${newCount} — another one for your tally!`;
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer = setTimeout(() => {
+    toast.hidden = true;
+  }, 4200);
+}
+
+function animateCollectionTally(card, isNew) {
+  const chip = document.querySelector(`.collection-chip[data-animal-id="${card.id}"]`);
+  if (!chip) return;
+
+  chip.classList.remove('tally-new', 'tally-more');
+  // restart CSS animation
+  void chip.offsetWidth;
+  chip.classList.add(isNew ? 'tally-new' : 'tally-more');
+
+  const countEl = chip.querySelector('.count');
+  if (countEl && !isNew) {
+    countEl.classList.remove('tally-bump');
+    void countEl.offsetWidth;
+    countEl.classList.add('tally-bump');
+  }
+
+  // Fly emoji from the garden visitor (or card) into the collection chip.
+  const visitor = document.querySelector('#animalsLayer .visitor.show, #animalsGroundLayer .visitor.show');
+  const fromEl = visitor || document.querySelector('#cardTray .animal-card .card-emoji');
+  if (!fromEl) return;
+
+  const from = fromEl.getBoundingClientRect();
+  const to = chip.getBoundingClientRect();
+  const fly = document.createElement('span');
+  fly.className = 'tally-fly';
+  fly.textContent = card.emoji;
+  fly.style.left = `${from.left + from.width / 2}px`;
+  fly.style.top = `${from.top + from.height / 2}px`;
+  fly.style.transform = 'translate(-50%, -50%) scale(1.2)';
+  document.body.appendChild(fly);
+
+  requestAnimationFrame(() => {
+    const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+    const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+    fly.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.55)`;
+    fly.classList.add('tally-fly-done');
+  });
+  setTimeout(() => fly.remove(), 780);
 }
 
 function renderCollection() {
@@ -1116,6 +1181,7 @@ function renderCollection() {
     const rarity = c.bestRarity || 'common';
     const chip = document.createElement('span');
     chip.className = `collection-chip rarity-${rarity}`;
+    chip.dataset.animalId = id;
     chip.innerHTML =
       `${c.emoji} ${c.name} <span class="count">×${c.count}</span>` +
       `<span class="chip-rarity">${RARITY_LABEL[rarity]}</span>`;
@@ -1245,23 +1311,24 @@ function settleNeighbourSeeds() {
 
 function finishBonus() {
   bonusUsed = true;
-  gardenPhase = 'done';
+  gardenPhase = 'complete';
   stopBreathGuide();
   const hint = document.getElementById('bonusHint');
-  if (hint) hint.textContent = 'Seeds settled next door. Your animal card stays the same.';
+  if (hint) hint.textContent = 'Seeds settled next door. Press G to stop and keep your cards.';
   const bonusBtn = document.getElementById('bonusGardenBtn');
   if (bonusBtn) bonusBtn.disabled = true;
   const prompt = document.getElementById('promptText');
   if (prompt) prompt.textContent = 'Bonus complete — soft wind, new neighbour plants.';
   persistSessionLog(true);
+  setGardenUIMode('complete');
   updateSessionHud();
   updateCloudGardenWeather();
 }
 
 function tickSession() {
   if (gardenPhase !== 'playing') return;
-  // Freeze the minute clock while the child is on a breath break.
   if (gardenBreathBreak) {
+    updateSessionHud();
     sessionTimerRAF = requestAnimationFrame(tickSession);
     return;
   }
@@ -1281,18 +1348,46 @@ function tickSession() {
 function setGardenUIMode(mode) {
   const prompt = document.getElementById('gardenPrompt');
   const end = document.getElementById('gardenEnd');
+  const backdrop = document.getElementById('gardenEndBackdrop');
   const startBtn = document.getElementById('startGardenBtn');
   const demoBtn = document.getElementById('demoSkipBtn');
-  if (mode === 'idle' || mode === 'playing' || mode === 'bonus') {
-    if (prompt) prompt.hidden = false;
-    if (end) end.hidden = true;
-    if (startBtn) startBtn.hidden = mode !== 'idle';
-    if (demoBtn) demoBtn.hidden = mode !== 'idle';
-  } else {
-    if (prompt) prompt.hidden = true;
-    if (end) end.hidden = false;
+  const tagline = document.getElementById('gardenTagline');
+  const showEnd = mode === 'complete';
+  const showStart = mode === 'idle';
+
+  if (prompt) prompt.hidden = !showStart && mode !== 'bonus';
+  if (end) end.hidden = !showEnd;
+  if (backdrop) backdrop.hidden = !showEnd;
+  if (startBtn) startBtn.hidden = mode !== 'idle';
+  if (demoBtn) demoBtn.hidden = mode !== 'idle';
+
+  if (mode === 'bonus' && prompt) {
+    prompt.hidden = false;
+    if (startBtn) startBtn.hidden = true;
     if (demoBtn) demoBtn.hidden = true;
   }
+
+  if (tagline) {
+    tagline.textContent = mode === 'playing' || mode === 'bonus'
+      ? 'Follow the glowing guide'
+      : 'One minute of gentle weather';
+  }
+
+  document.body.classList.toggle('garden-end-open', showEnd);
+}
+
+function handleGardenEndKeys(key) {
+  if (activeTab !== 'garden' || gardenPhase !== 'complete') return false;
+  // PulmoPlay F / G notes: arrowleft/f = F, arrowright/g/j = G
+  if (key === 'arrowleft' || key === 'f') {
+    if (!bonusUsed) beginBonus();
+    return true;
+  }
+  if (key === 'arrowright' || key === 'g' || key === 'j') {
+    finishGarden();
+    return true;
+  }
+  return false;
 }
 
 function resetGardenWorld() {
@@ -1429,7 +1524,7 @@ function endSession() {
   if (bonusBtn) bonusBtn.disabled = false;
   const hint = document.getElementById('bonusHint');
   if (hint) {
-    hint.textContent = 'Optional: one more guided breath cycle sends wind carrying seeds to a neighbouring plot. Same core reward either way.';
+    hint.textContent = 'Press F to continue with a bonus breath, or G to stop and keep your cards.';
   }
 
   setGardenUIMode('complete');
@@ -1441,13 +1536,8 @@ function beginBonus() {
   if (gardenPhase !== 'complete' || bonusUsed) return;
   gardenPhase = 'bonus';
   bonusStep = 'await-inhale';
+  bonusUsed = true;
   setGardenUIMode('bonus');
-  const promptWrap = document.getElementById('gardenPrompt');
-  const end = document.getElementById('gardenEnd');
-  if (promptWrap) promptWrap.hidden = false;
-  if (end) end.hidden = false;
-  const startBtn = document.getElementById('startGardenBtn');
-  if (startBtn) startBtn.hidden = true;
   const prompt = document.getElementById('promptText');
   if (prompt) prompt.textContent = 'Bonus cycle: follow inhale 4, hold 4, exhale 8 — wind will carry seeds next door.';
   const bonusBtn = document.getElementById('bonusGardenBtn');
@@ -1518,6 +1608,7 @@ function setupTabs() {
       document.querySelectorAll('.tab-panel').forEach(panel => {
         panel.hidden = panel.dataset.panel !== tab;
       });
+      document.body.classList.toggle('garden-mode', tab === 'garden');
       if (tab !== 'lanes' && window.MelodyLanes) MelodyLanes.stopIfLeavingTab();
       if (tab !== 'lanes') releaseAllInstrumentNotes();
       if (tab === 'lanes') {
@@ -1565,6 +1656,11 @@ function setupKeyboard() {
       return;
     }
     if (e.repeat) return;
+
+    if (handleGardenEndKeys(k)) {
+      e.preventDefault();
+      return;
+    }
 
     if (activeTab === 'lanes') {
       if (window.MelodyLanes) MelodyLanes.handleKeyDown(e);
