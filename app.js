@@ -521,6 +521,14 @@ let guideLastTickAt = 0;
 let demoMode = false; // staff demo: one full cycle, then jump to finale
 let demoFinaleTriggered = false;
 let gardenGuideVoices = []; // soft phase tones (stop on phase change)
+let gardenBreathBreak = false; // paused because no breath for >3s (not during hold)
+let gardenNoBreathSince = null;
+let gardenBreakScale = 1;
+let gardenBreakPauseStartedAt = null;
+
+const GARDEN_IDLE_BREAK_MS = 3000;
+const GARDEN_BREAK_MESSAGE =
+  "Having a break? No worries, we'll start from the beginning of the breath you paused.";
 
 const GARDEN_PHASE_TONES = {
   inhale: [261.63], // C4
@@ -558,13 +566,17 @@ function updateCloudGardenWeather() {
   // garden matches inhale → hold → exhale. Fall back to live breath otherwise.
   let showCloud = false;
   let showRain = false;
-  if (active && guideRunning) {
+  if (active && guideRunning && !gardenBreathBreak) {
     showCloud = guidePhase === 'inhale' || guidePhase === 'hold' || guidePhase === 'exhale';
     showRain = guidePhase === 'exhale';
-  } else if (active) {
+  } else if (active && !gardenBreathBreak) {
     showCloud = breathMode === 'inspiration' || breathMode === 'expiration' ||
       cycleStep === 'await-hold' || cycleStep === 'await-exhale';
     showRain = breathMode === 'expiration';
+  } else if (active && gardenBreathBreak) {
+    // Keep the cloud as a calm resting cue; rain and motion are frozen.
+    showCloud = true;
+    showRain = false;
   }
   // Cloud stays on screen while raining; rain hangs from the cloud body.
   cloud.classList.toggle('visible', showCloud);
@@ -613,6 +625,13 @@ function updateGuideUI(progress01) {
 
   guide.classList.remove('phase-inhale', 'phase-hold', 'phase-exhale');
   guide.classList.add(`phase-${guidePhase}`);
+  guide.classList.toggle('breath-break', gardenBreathBreak);
+
+  if (gardenBreathBreak) {
+    text.textContent = 'Paused';
+    dot.style.transform = `scale(${gardenBreakScale.toFixed(3)})`;
+    return;
+  }
 
   const count = Math.max(1, guideSecondsLeft);
   const verb = guidePhase === 'inhale' ? 'Inhale' : guidePhase === 'hold' ? 'Hold' : 'Exhale';
@@ -624,6 +643,93 @@ function updateGuideUI(progress01) {
   else if (guidePhase === 'hold') scale = 1.1;
   else scale = 1.1 - progress01 * 0.38;
   dot.style.transform = `scale(${scale.toFixed(3)})`;
+}
+
+function setGardenBreathBreakUI(active) {
+  const world = document.getElementById('gardenWorld');
+  const banner = document.getElementById('gardenBreakMsg');
+  if (world) world.classList.toggle('breath-paused', active);
+  if (banner) {
+    banner.hidden = !active;
+    if (active) banner.textContent = GARDEN_BREAK_MESSAGE;
+  }
+}
+
+function clearGardenBreathIdleTimers() {
+  gardenNoBreathSince = null;
+  gardenBreakPauseStartedAt = null;
+}
+
+function exitGardenBreathBreakState(restartPhase) {
+  const wasBreak = gardenBreathBreak;
+  gardenBreathBreak = false;
+  clearGardenBreathIdleTimers();
+  setGardenBreathBreakUI(false);
+  if (!wasBreak) return;
+
+  if (restartPhase && guideRunning) {
+    const step = GUIDE_STEPS[guideStepIndex];
+    guidePhase = step.phase;
+    guideSecondsLeft = step.seconds;
+    guidePhaseStartedAt = performance.now();
+    guideLastTickAt = guidePhaseStartedAt;
+    playGardenGuidePhaseSound(guidePhase, guideSecondsLeft);
+    updateGuideUI(0);
+    updateCloudGardenWeather();
+    applyPlantScales();
+  }
+}
+
+function enterGardenBreathBreak(now) {
+  if (gardenBreathBreak || guidePhase === 'hold') return;
+  gardenBreathBreak = true;
+  gardenBreakPauseStartedAt = now;
+
+  const step = GUIDE_STEPS[guideStepIndex];
+  const elapsed = (now - guidePhaseStartedAt) / 1000;
+  const progress = Math.min(1, Math.max(0, elapsed / step.seconds));
+  if (guidePhase === 'inhale') gardenBreakScale = 0.72 + progress * 0.38;
+  else if (guidePhase === 'exhale') gardenBreakScale = 1.1 - progress * 0.38;
+  else gardenBreakScale = 1.1;
+
+  stopGardenGuideSound();
+  setGardenBreathBreakUI(true);
+  updateCloudGardenWeather();
+  applyPlantScales();
+  updateGuideUI(progress);
+}
+
+function resumeGardenBreathBreak(now) {
+  if (!gardenBreathBreak) return;
+  // Don't count break time against the 1-minute session clock.
+  if (gardenBreakPauseStartedAt != null) {
+    sessionStartedAt += now - gardenBreakPauseStartedAt;
+  }
+  exitGardenBreathBreakState(true);
+}
+
+// No-breath idle during inhale/exhale only — hold is an intentional pause.
+function updateGardenBreathIdleWatch(now) {
+  if (!guideRunning || (gardenPhase !== 'playing' && gardenPhase !== 'bonus')) {
+    if (gardenBreathBreak) exitGardenBreathBreakState(false);
+    else clearGardenBreathIdleTimers();
+    return;
+  }
+
+  if (guidePhase === 'hold') {
+    gardenNoBreathSince = null;
+    return;
+  }
+
+  if (breathMode === 'normal') {
+    if (gardenNoBreathSince == null) gardenNoBreathSince = now;
+    if (!gardenBreathBreak && now - gardenNoBreathSince >= GARDEN_IDLE_BREAK_MS) {
+      enterGardenBreathBreak(now);
+    }
+  } else {
+    gardenNoBreathSince = null;
+    if (gardenBreathBreak) resumeGardenBreathBreak(now);
+  }
 }
 
 function stopGardenGuideSound() {
@@ -675,6 +781,7 @@ function stopBreathGuide() {
     cancelAnimationFrame(guideRAF);
     guideRAF = null;
   }
+  exitGardenBreathBreakState(false);
   setGuideVisible(false);
 }
 
@@ -703,6 +810,15 @@ function tickBreathGuide() {
   }
 
   const now = performance.now();
+  updateGardenBreathIdleWatch(now);
+
+  if (gardenBreathBreak) {
+    guideLastTickAt = now;
+    updateGuideUI(0);
+    guideRAF = requestAnimationFrame(tickBreathGuide);
+    return;
+  }
+
   const deltaSec = Math.min(0.05, (now - guideLastTickAt) / 1000);
   guideLastTickAt = now;
 
@@ -727,6 +843,7 @@ function tickBreathGuide() {
     guidePhase = next.phase;
     guideSecondsLeft = next.seconds;
     guidePhaseStartedAt = now;
+    gardenNoBreathSince = null;
     playGardenGuidePhaseSound(guidePhase, guideSecondsLeft);
 
     // Completing exhale closes one guided cycle: grow the garden gently.
@@ -784,7 +901,7 @@ function applyPlantScales() {
     const el = nodes[i];
     if (!el || !plant) return;
     el.style.setProperty('--plant-scale', String(plant.scale));
-    el.classList.toggle('soak', guideRunning && guidePhase === 'hold');
+    el.classList.toggle('soak', guideRunning && guidePhase === 'hold' && !gardenBreathBreak);
   });
 }
 
@@ -1079,6 +1196,10 @@ function onGardenBreathChange(previous, mode) {
       bonusStep = 'await-inhale';
     }
   }
+
+  // Break / resume reacts immediately to ESP32 breath changes.
+  if (guideRunning) updateGardenBreathIdleWatch(performance.now());
+
   updateSessionHud();
 }
 
@@ -1139,6 +1260,11 @@ function finishBonus() {
 
 function tickSession() {
   if (gardenPhase !== 'playing') return;
+  // Freeze the minute clock while the child is on a breath break.
+  if (gardenBreathBreak) {
+    sessionTimerRAF = requestAnimationFrame(tickSession);
+    return;
+  }
   const elapsed = performance.now() - sessionStartedAt;
   const left = SESSION_MS - elapsed;
   updateSessionHud();
@@ -1205,6 +1331,9 @@ function resetGardenWorld() {
   if (neighbour) neighbour.hidden = true;
   if (tray) tray.innerHTML = '';
   document.querySelectorAll('.comfort-btn').forEach(b => b.classList.remove('selected'));
+  setGardenBreathBreakUI(false);
+  gardenBreathBreak = false;
+  clearGardenBreathIdleTimers();
   renderPlants();
   updateCloudGardenWeather();
   updateSessionHud();

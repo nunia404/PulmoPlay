@@ -1088,6 +1088,51 @@ body{
   font-weight:750;
 }
 
+.breath-guide.breath-break .guide-dot{
+  animation:guide-break-blink 1s ease-in-out infinite !important;
+  filter:none;
+}
+@keyframes guide-break-blink{
+  0%,100%{opacity:1;}
+  50%{opacity:.28;}
+}
+
+.garden-break-msg{
+  position:absolute;
+  left:50%;
+  bottom:18px;
+  transform:translateX(-50%);
+  z-index:9;
+  margin:0;
+  max-width:min(92%, 420px);
+  padding:10px 14px;
+  border-radius:14px;
+  background:rgba(28,40,32,.78);
+  color:#f4f8f4;
+  font-size:.82rem;
+  font-weight:600;
+  line-height:1.35;
+  text-align:center;
+  text-shadow:0 1px 2px rgba(0,0,0,.35);
+  pointer-events:none;
+}
+.garden-break-msg[hidden]{display:none;}
+
+/* Freeze weather / plant motion while waiting for the child to breathe again */
+.garden-world.breath-paused .rain-layer.active{opacity:0;}
+.garden-world.breath-paused .raindrop,
+.garden-world.breath-paused .sky-drift,
+.garden-world.breath-paused .sun,
+.garden-world.breath-paused .grass-tufts span,
+.garden-world.breath-paused .visitor,
+.garden-world.breath-paused .plant,
+.garden-world.breath-paused .seed-puff{
+  animation-play-state:paused !important;
+}
+.garden-world.breath-paused .cloud.raining .cloud-puff{
+  filter:none;
+}
+
 .collection-strip{
   margin-top:14px;
   padding-top:12px;
