@@ -594,17 +594,17 @@ body.garden-mode #panel-garden{
 
 .cloud{
   position:absolute;
-  top:14px;
+  top:32%;
   left:50%;
-  width:210px;
-  height:96px;
-  transform:translateX(-50%) scale(.25);
+  width:420px;
+  height:190px;
+  transform:translateX(-50%) scale(.2);
   opacity:0;
   transition:transform .55s ease, opacity .4s ease;
   z-index:3;
   pointer-events:none;
   overflow:visible;
-  filter:drop-shadow(0 8px 12px rgba(40,70,100,.22));
+  filter:drop-shadow(0 12px 18px rgba(40,70,100,.26));
 }
 .cloud.visible{
   opacity:1;
@@ -617,26 +617,48 @@ body.garden-mode #panel-garden{
 .cloud.raining .cloud-puff{
   filter:brightness(.88) saturate(.8);
 }
+.cloud-side{
+  top:42%;
+  left:22%;
+  width:260px;
+  height:130px;
+  z-index:2;
+  filter:drop-shadow(0 10px 14px rgba(40,70,100,.2));
+}
+.cloud-side.visible{
+  transform:translateX(-50%) scale(.85);
+  opacity:.92;
+}
+.cloud-side.raining{
+  transform:translateX(-50%) scale(.85);
+  opacity:.92;
+}
 .cloud-puff{
   position:absolute;
   background:linear-gradient(180deg, #ffffff, #eef5ff 70%, #dce8f6);
   border-radius:50%;
-  box-shadow:inset 0 -3px 6px rgba(100,130,160,.12);
+  box-shadow:inset 0 -4px 8px rgba(100,130,160,.14);
   z-index:2;
 }
-.cloud-puff.p1{width:98px;height:70px;left:52px;top:14px;}
-.cloud-puff.p2{width:72px;height:58px;left:10px;top:24px;}
-.cloud-puff.p3{width:78px;height:62px;left:118px;top:20px;}
-.cloud-puff.p4{width:56px;height:46px;left:78px;top:4px;}
-.cloud-puff.p5{width:64px;height:50px;left:148px;top:28px;}
+.cloud-puff.p1{width:180px;height:128px;left:110px;top:34px;}
+.cloud-puff.p2{width:132px;height:108px;left:18px;top:48px;}
+.cloud-puff.p3{width:150px;height:118px;left:250px;top:42px;}
+.cloud-puff.p4{width:108px;height:88px;left:160px;top:8px;}
+.cloud-puff.p5{width:120px;height:96px;left:300px;top:56px;}
+.cloud-puff.p6{width:100px;height:82px;left:70px;top:22px;}
+.cloud-puff.p7{width:92px;height:74px;left:210px;top:58px;}
+.cloud-side .cloud-puff.p1{width:120px;height:88px;left:60px;top:22px;}
+.cloud-side .cloud-puff.p2{width:92px;height:74px;left:8px;top:34px;}
+.cloud-side .cloud-puff.p3{width:100px;height:80px;left:140px;top:28px;}
+.cloud-side .cloud-puff.p4{width:72px;height:58px;left:95px;top:6px;}
 
 /* Rain hangs under the cloud body so drops clearly fall from it */
 .rain-layer{
   position:absolute;
-  left:12%;
-  right:12%;
-  top:72%;
-  height:220px;
+  left:8%;
+  right:8%;
+  top:70%;
+  height:280px;
   overflow:hidden;
   pointer-events:none;
   opacity:0;
@@ -1130,9 +1152,9 @@ body.garden-mode #panel-garden{
 .breath-guide{
   position:absolute;
   left:0;
-  bottom:64px;
-  width:170px;
-  height:150px;
+  bottom:72px;
+  width:280px;
+  height:250px;
   z-index:8;
   pointer-events:none;
   overflow:hidden;
@@ -1140,10 +1162,10 @@ body.garden-mode #panel-garden{
 .breath-guide[hidden]{display:none;}
 .guide-dot{
   position:absolute;
-  left:-56px;
-  bottom:-68px;
-  width:168px;
-  height:168px;
+  left:-72px;
+  bottom:-90px;
+  width:280px;
+  height:280px;
   border-radius:50%;
   background:radial-gradient(circle at 42% 38%,
     rgba(255,255,255,.88),
@@ -1152,8 +1174,8 @@ body.garden-mode #panel-garden{
     rgba(100,150,125,.12) 82%,
     transparent 90%);
   box-shadow:
-    0 0 26px 10px rgba(140,190,160,.38),
-    inset 0 0 20px rgba(255,255,255,.35);
+    0 0 36px 14px rgba(140,190,160,.42),
+    inset 0 0 28px rgba(255,255,255,.35);
   transform:scale(.72);
   transform-origin:60% 40%;
   transition:background .6s ease, box-shadow .6s ease, opacity .4s ease;
@@ -1203,11 +1225,11 @@ body.garden-mode #panel-garden{
 }
 .guide-text{
   position:absolute;
-  left:14px;
-  bottom:14px;
+  left:22px;
+  bottom:22px;
   margin:0;
-  max-width:120px;
-  font-size:.78rem;
+  max-width:180px;
+  font-size:1.05rem;
   font-weight:650;
   letter-spacing:.15px;
   color:rgba(255,255,255,.92);
@@ -1222,6 +1244,7 @@ body.garden-mode #panel-garden{
   min-width:0.9em;
   color:rgba(255,255,245,.98);
   font-weight:750;
+  font-size:1.15em;
 }
 
 .breath-guide.breath-break .guide-dot{

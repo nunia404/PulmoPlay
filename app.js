@@ -558,6 +558,7 @@ function buildRainLayer() {
 
 function updateCloudGardenWeather() {
   const cloud = document.getElementById('gardenCloud');
+  const cloudSide = document.getElementById('gardenCloudSide');
   const rainLayer = document.getElementById('rainLayer');
   if (!cloud || !rainLayer) return;
 
@@ -581,6 +582,10 @@ function updateCloudGardenWeather() {
   // Cloud stays on screen while raining; rain hangs from the cloud body.
   cloud.classList.toggle('visible', showCloud);
   cloud.classList.toggle('raining', showRain);
+  if (cloudSide) {
+    cloudSide.classList.toggle('visible', showCloud);
+    cloudSide.classList.toggle('raining', showRain);
+  }
   rainLayer.classList.toggle('active', showRain);
 }
 
