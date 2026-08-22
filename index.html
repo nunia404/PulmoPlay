@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PulmoPlay - 9 Button Clarinet</title>
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=27">
 </head>
 <body>
 
@@ -12,7 +12,8 @@
 
   <div class="tabbar" role="tablist">
     <button class="tab-btn active" id="tabClarinetBtn" type="button" data-tab="clarinet" role="tab" aria-selected="true">&#9835; Clarinet</button>
-    <button class="tab-btn" id="tabGardenBtn" type="button" data-tab="garden" role="tab" aria-selected="false">&#127793; Breath Garden</button>
+    <button class="tab-btn" id="tabGardenBtn" type="button" data-tab="garden" role="tab" aria-selected="false">&#9729; Cloud Garden</button>
+    <button class="tab-btn" id="tabLanesBtn" type="button" data-tab="lanes" role="tab" aria-selected="false">&#9834; Melody Lanes</button>
   </div>
 
   <section class="tab-panel" id="panel-clarinet" data-panel="clarinet">
@@ -105,41 +106,158 @@
   <section class="tab-panel" id="panel-garden" data-panel="garden" hidden>
     <div class="garden-console">
 
-      <h1 class="brand">Breath Garden</h1>
+      <div class="garden-world" id="gardenWorld">
+        <div class="sky" id="sky">
+          <div class="sun" aria-hidden="true"></div>
+          <div class="sky-drift d1" aria-hidden="true"></div>
+          <div class="sky-drift d2" aria-hidden="true"></div>
+          <div class="horizon-hills" aria-hidden="true"></div>
+          <div class="cloud" id="gardenCloud" aria-hidden="true">
+            <span class="cloud-puff p1"></span>
+            <span class="cloud-puff p2"></span>
+            <span class="cloud-puff p3"></span>
+            <span class="cloud-puff p4"></span>
+            <span class="cloud-puff p5"></span>
+            <span class="cloud-puff p6"></span>
+            <span class="cloud-puff p7"></span>
+            <div class="rain-layer" id="rainLayer"></div>
+          </div>
+          <div class="cloud cloud-side" id="gardenCloudSide" aria-hidden="true">
+            <span class="cloud-puff p1"></span>
+            <span class="cloud-puff p2"></span>
+            <span class="cloud-puff p3"></span>
+            <span class="cloud-puff p4"></span>
+          </div>
+          <div class="wind-layer" id="windLayer" aria-hidden="true"></div>
+          <div class="animals-layer animals-air" id="animalsLayer"></div>
+        </div>
+        <div class="garden-ground" id="gardenGround">
+          <div class="grass-texture" aria-hidden="true"></div>
+          <div class="grass-tufts" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="garden-plots" id="gardenPlots"></div>
+          <div class="animals-layer animals-ground" id="animalsGroundLayer"></div>
+          <div class="neighbour-plot" id="neighbourPlot" hidden>
+            <span class="neighbour-label">Neighbour plot</span>
+            <div class="neighbour-plants" id="neighbourPlants"></div>
+          </div>
+          <div class="soil" aria-hidden="true"></div>
+        </div>
 
-      <div class="screen" id="gardenScreen">
-        <div class="screen-row">
-          <div class="tile">
-            <span class="t-label">BREATH</span>
-            <span class="t-value breath-value" id="breathValueGarden"><i class="breath-dot" id="breathDotGarden"></i><span id="breathTextGarden">NORMAL</span></span>
+        <div class="garden-hud" id="gardenHud">
+          <div class="garden-hud-brand">
+            <h1 class="brand brand-garden">Cloud Garden</h1>
+            <p class="garden-tagline" id="gardenTagline">One minute of gentle weather</p>
           </div>
-          <div class="tile">
-            <span class="t-label">INSPIR. TIME</span>
-            <span class="t-value" id="inspTimeValue">0.0s</span>
+          <div class="screen garden-screen" id="gardenScreen">
+            <div class="screen-row">
+              <div class="tile">
+                <span class="t-label">BREATH</span>
+                <span class="t-value breath-value" id="breathValueGarden"><i class="breath-dot" id="breathDotGarden"></i><span id="breathTextGarden">PAUSE</span></span>
+              </div>
+              <div class="tile">
+                <span class="t-label">TIME</span>
+                <span class="t-value" id="sessionTimeValue">1:00</span>
+              </div>
+              <div class="tile">
+                <span class="t-label">CYCLES</span>
+                <span class="t-value" id="cycleValue">0</span>
+              </div>
+              <div class="tile">
+                <span class="t-label">RESTS</span>
+                <span class="t-value" id="restValue">0</span>
+              </div>
+            </div>
+            <div class="screen-row track-row">
+              <span class="t-label">PATTERN</span>
+              <span class="t-value track-name" id="patternHint">Inhale 4 · Hold 4 · Exhale 8</span>
+            </div>
           </div>
         </div>
-        <div class="screen-row">
-          <div class="tile">
-            <span class="t-label">SCORE</span>
-            <span class="t-value" id="scoreValue">0</span>
-          </div>
-          <div class="tile">
-            <span class="t-label">BEST SCORE</span>
-            <span class="t-value" id="bestScoreValue">0</span>
-          </div>
+
+        <div class="breath-guide" id="breathGuide" hidden aria-live="polite">
+          <span class="guide-dot" id="guideDot" aria-hidden="true"></span>
+          <p class="guide-text" id="guideText">Inhale for 4</p>
         </div>
-        <div class="screen-row track-row">
-          <span class="t-label">BEST INSPIR. TIME</span>
-          <span class="t-value track-name" id="bestInspValue">0.0s</span>
+        <p class="garden-break-msg" id="gardenBreakMsg" hidden>
+          Having a break? No worries, we'll start from the beginning of the breath you paused.
+        </p>
+
+        <div class="collection-strip" id="collectionStrip">
+          <span class="collection-label">Animal cards</span>
+          <div class="collection-cards" id="collectionCards"></div>
+        </div>
+
+        <div class="garden-prompt" id="gardenPrompt">
+          <p class="prompt-text" id="promptText">Breathe gently. Inhale summons a cloud, hold lets it rest, exhale makes it rain.</p>
+          <button class="garden-cta" id="startGardenBtn" type="button">Start 1-minute garden</button>
+          <button class="demo-skip-btn" id="demoSkipBtn" type="button" title="For staff demos only — one breath cycle, then final 4 seconds. Not for patients.">Demo version</button>
+        </div>
+
+        <div class="garden-end-backdrop" id="gardenEndBackdrop" hidden></div>
+        <div class="garden-end" id="gardenEnd" hidden role="dialog" aria-modal="true" aria-labelledby="endTitle">
+          <h2 class="end-title" id="endTitle">Your garden bloomed!</h2>
+          <p class="end-sub" id="endBiomeLabel">Meadow biome</p>
+          <div class="card-tray" id="cardTray" aria-live="polite"></div>
+          <div class="tally-toast" id="tallyToast" hidden aria-live="polite"></div>
+          <div class="comfort-block" id="comfortBlock">
+            <p class="comfort-label">How did that feel? <span class="optional">(optional)</span></p>
+            <div class="comfort-row" id="comfortRow">
+              <button type="button" class="comfort-btn" data-comfort="1" aria-label="A bit hard">1</button>
+              <button type="button" class="comfort-btn" data-comfort="2" aria-label="Okay">2</button>
+              <button type="button" class="comfort-btn" data-comfort="3" aria-label="Comfortable">3</button>
+              <button type="button" class="comfort-btn" data-comfort="4" aria-label="Easy">4</button>
+              <button type="button" class="comfort-btn" data-comfort="5" aria-label="Very easy">5</button>
+            </div>
+          </div>
+          <p class="session-note" id="sessionNote"></p>
+          <div class="end-actions">
+            <button class="garden-cta" id="bonusGardenBtn" type="button">
+              <kbd class="key-chip">F</kbd> Continue — wind bonus
+            </button>
+            <button class="garden-cta secondary" id="finishGardenBtn" type="button">
+              <kbd class="key-chip">G</kbd> Stop — keep cards
+            </button>
+          </div>
+          <p class="bonus-hint" id="bonusHint">Press <strong>F</strong> to continue with a bonus breath, or <strong>G</strong> to stop.</p>
         </div>
       </div>
 
-      <div class="garden-field" id="gardenField">
-        <div class="rain-layer" id="rainLayer"></div>
-        <div class="garden-grid" id="gardenGrid"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" id="panel-lanes" data-panel="lanes" hidden>
+    <div class="lanes-console ml-console">
+      <h1 class="brand brand-lanes">Musical Notes</h1>
+      <p class="lanes-tagline">Now playing:
+        <select id="mlSongSelect" class="ml-song-select" aria-label="Choose a song"></select>
+      </p>
+      <p class="lanes-tagline soft">Tap the colored bells when notes reach the black bar</p>
+      <p class="ml-ai-status" id="mlAiStatus">Keyboard mode (AI optional)</p>
+
+      <div class="ml-controls">
+        <button class="garden-cta" id="mlPlayBtn" type="button">Play</button>
+        <button class="garden-cta secondary" id="mlResetBtn" type="button">Reset</button>
+        <div class="ml-speed">
+          <button class="ml-speed-btn" id="mlSpeedDown" type="button" aria-label="Slower">&minus;</button>
+          <span id="mlSpeedValue">1.0×</span>
+          <button class="ml-speed-btn" id="mlSpeedUp" type="button" aria-label="Faster">+</button>
+        </div>
+        <div class="ml-stat"><span class="t-label">SCORE</span><span id="mlScore">0</span></div>
+        <div class="ml-stat"><span class="t-label">STREAK</span><span id="mlStreak">0</span></div>
       </div>
 
-      <p class="hint">No mouse needed &mdash; each plot is a key: <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>&larr;</kbd><kbd>&rarr;</kbd><kbd>K</kbd><kbd>L</kbd><kbd>;</kbd>, same as the clarinet. Hold a key to plant/tend its plot (hold several to tend several at once), then hold <kbd>I</kbd> (release with <kbd>N</kbd>) to inhale &mdash; it rains on the garden and every held plot grows, just like inhaling mutes each key's clarinet note until you exhale with <kbd>&darr;</kbd>. A longer, fuller breath grows more. Press a ripe plot's key again to harvest it and beat your best score!</p>
+      <div class="ml-stage" id="mlStage">
+        <div class="ml-countdown" id="mlCountdown" hidden>3</div>
+        <div class="ml-flash" id="mlFlash"></div>
+        <div class="ml-board" id="mlBoard"></div>
+        <div class="ml-falling-layer" id="mlFallingLayer"></div>
+        <div class="ml-black-bar" aria-hidden="true"></div>
+      </div>
+
+      <p class="lanes-hint">Keys: <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd>/<kbd>&larr;</kbd> <kbd>J</kbd>/<kbd>&rarr;</kbd> <kbd>K</kbd><kbd>L</kbd><kbd>;</kbd> — or play notes for AI scoring when the model is ready.</p>
     </div>
   </section>
 
@@ -148,6 +266,9 @@
   <p class="app-footer">Sound is synthesized live in the browser &mdash; no audio files needed. Pair your ESP32 as a Bluetooth keyboard and it plays both PulmoPlay games exactly the same way.</p>
 </main>
 
-<script src="app.js?v=5"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands@0.5.4/dist/speech-commands.min.js" defer></script>
+<script src="melody-lanes.js?v=5"></script>
+<script src="app.js?v=25"></script>
 </body>
 </html>

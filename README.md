@@ -1,6 +1,6 @@
 # PulmoPlay
 
-A 9-button keyboard clarinet in the browser, plus a "Breath Garden" mini-game. Sound is synthesized live with the Web Audio API — no audio files, no build step, no dependencies. It also supports breath input from an ESP32 flow sensor connected over Bluetooth (the ESP32 sends normal keystrokes, so the browser can't tell it apart from a person pressing keys).
+A 9-button keyboard clarinet in the browser, plus **Cloud Garden** and **Melody Lanes**. Sound is synthesized live with the Web Audio API — no audio files, no build step, no dependencies. It also supports breath input from an ESP32 flow sensor connected over Bluetooth (the ESP32 sends normal keystrokes, so the browser can't tell it apart from a person pressing keys).
 
 ## Requirements
 
@@ -45,15 +45,31 @@ Since it's static files, deploy by copying `index.html`, `app.js`, and `style.cs
 | `↓` | Breath: exhale |
 | `I` | Breath: inhale (mutes the instrument until you exhale) |
 
-**Breath Garden tab**
+**Cloud Garden tab**
 
-Same finger keys (`A S D ← → K L ;`) plant/tend plots — hold one to tend it, hold several at once to tend several. Hold `I` (release with `N`) to inhale: it rains on the garden and every held plot grows. A longer, fuller breath grows more. Press a ripe plot's key again to harvest it and beat your best score.
+A one-minute session. Breathing creates weather that grows a magical garden. A glowing guide coaches **inhale 4 · hold 4 · exhale 8**:
+
+| Breath state | Weather |
+|---|---|
+| Inhale (`I`, 4s) | Summons a cloud |
+| Hold (`N`, 4s) | Cloud rests |
+| Exhale (`↓`, 8s) | Makes the cloud rain |
+
+Across the minute, seedlings become a changing mix of flowers, ferns, mushrooms, and vines. In the final 10 seconds, **one animal** (such as a bee, butterfly, frog, or bird) visits. After the session the child collects **that animal’s card** — rarity comes from garden biome, plant mix, repeat visits, and gentle randomness, **not** breathing force or session length.
+
+When the minute ends, they can keep the same core reward and finish, or try an optional bonus: one more approved breath cycle sends wind carrying seeds to a neighbouring plot.
+
+Cloud Garden only detects three states — inhale, pause, exhale — so it rewards a comfortable pattern and rests. It records timing, completed cycles, rests, and an optional comfort rating. It does **not** claim to measure lung capacity, strength, or cough effectiveness.
+
+**Melody Lanes tab**
+
+Port of the original melody-lanes game (`MusicGame` / `FallingNote` / `NoteLane` / `songs`): timed falling notes for **สายทิพย์**, black hit bar with colored bells, score/streak, speed control, countdown, optional Teachable Machine AI note recognition, plus keyboard (`A S D F/← J/→ K L ;`).
 
 ## ESP32 / Bluetooth breath sensor (optional)
 
 The instrument can be driven by a physical breath sensor instead of the `↓`/`I`/`N` keys. The ESP32 firmware pairs as a Bluetooth HID keyboard and sends a single keystroke whenever the breath state changes:
 
-- `n` — normal (no airflow)
+- `n` — normal / pause (no airflow)
 - `ArrowDown` — expiration (breathing out)
 - `i` — inspiration (breathing in)
 
