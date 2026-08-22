@@ -1613,7 +1613,7 @@ function setupTabs() {
       document.querySelectorAll('.tab-panel').forEach(panel => {
         panel.hidden = panel.dataset.panel !== tab;
       });
-      document.body.classList.toggle('garden-mode', tab === 'garden');
+      document.body.classList.toggle('immersive-mode', tab === 'garden' || tab === 'lanes');
       if (tab !== 'lanes' && window.MelodyLanes) MelodyLanes.stopIfLeavingTab();
       if (tab !== 'lanes') releaseAllInstrumentNotes();
       if (tab === 'lanes') {

@@ -424,18 +424,18 @@ body{
 }
 
 /* ---------------- Cloud Garden ---------------- */
-body.garden-mode{
+body.immersive-mode{
   padding:0;
   overflow:hidden;
 }
-body.garden-mode .stage{
+body.immersive-mode .stage{
   max-width:none;
   width:100%;
   height:100vh;
   height:100dvh;
   align-items:stretch;
 }
-body.garden-mode .tabbar{
+body.immersive-mode .tabbar{
   position:absolute;
   top:10px;
   left:50%;
@@ -444,11 +444,12 @@ body.garden-mode .tabbar{
   width:min(560px, 92%);
   margin:0;
 }
-body.garden-mode .app-footer,
-body.garden-mode .breath-test-btn{
+body.immersive-mode .app-footer,
+body.immersive-mode .breath-test-btn{
   display:none;
 }
-body.garden-mode #panel-garden{
+body.immersive-mode #panel-garden,
+body.immersive-mode #panel-lanes{
   flex:1;
   width:100%;
   min-height:0;
@@ -1414,50 +1415,54 @@ body.garden-mode #panel-garden{
 
 /* ---------------- Melody Lanes (ported from MusicGame / NoteLane / FallingNote) ---------------- */
 .ml-console{
+  position:relative;
   width:100%;
-  background:linear-gradient(165deg, #f4efe6, #ebe1d0 50%, #ddd0bb);
-  border-radius:46px;
-  padding:20px 14px 22px;
-  box-shadow:
-    0 24px 46px rgba(30,26,18,.35),
-    0 3px 0 var(--cream-shadow) inset;
+  flex:1;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  background:linear-gradient(165deg, #1a1f2c 0%, #242b3a 42%, #1c2230 100%);
+  border-radius:0;
+  padding:64px 12px 12px;
+  box-shadow:none;
 }
 .brand-lanes{
   margin:0 0 4px;
   text-align:center;
-  font-size:1.5rem;
-  color:#2c2438;
+  font-size:1.35rem;
+  color:#f4f1ea;
 }
 .lanes-tagline{
   margin:0 0 4px;
   text-align:center;
   font-size:.82rem;
-  color:var(--ink-soft);
+  color:rgba(244,241,234,.78);
 }
 .ml-song-select{
   margin-left:6px;
   max-width:min(100%, 280px);
   padding:4px 10px;
-  border:1px solid rgba(58,44,30,.25);
+  border:1px solid rgba(255,255,255,.2);
   border-radius:10px;
-  background:rgba(255,255,255,.7);
-  color:var(--ink);
+  background:rgba(255,255,255,.12);
+  color:#f4f1ea;
   font:inherit;
   font-weight:700;
   cursor:pointer;
 }
+.ml-song-select option{color:#1a120c; background:#f4f1ea;}
 .ml-song-select:disabled{
   opacity:.65;
   cursor:not-allowed;
 }
-.lanes-tagline.soft{margin-bottom:8px; font-size:.75rem;}
+.lanes-tagline.soft{margin-bottom:8px; font-size:.75rem; color:rgba(244,241,234,.62);}
 .ml-ai-status{
-  margin:0 0 12px;
+  margin:0 0 10px;
   text-align:center;
   font-size:.72rem;
-  color:var(--ink-soft);
+  color:rgba(244,241,234,.62);
 }
-.ml-ai-status.ready{color:#2f8a4e; font-weight:650;}
+.ml-ai-status.ready{color:#7ddea0; font-weight:650;}
 
 .ml-controls{
   display:flex;
@@ -1465,7 +1470,8 @@ body.garden-mode #panel-garden{
   align-items:center;
   justify-content:center;
   gap:8px;
-  margin-bottom:12px;
+  margin-bottom:10px;
+  flex-shrink:0;
 }
 .ml-speed{
   display:inline-flex;
@@ -1473,16 +1479,16 @@ body.garden-mode #panel-garden{
   gap:6px;
   padding:6px 10px;
   border-radius:12px;
-  background:rgba(255,255,255,.45);
+  background:rgba(255,255,255,.12);
   font-weight:700;
-  color:var(--ink);
+  color:#f4f1ea;
 }
 .ml-speed-btn{
   border:none;
   width:28px;height:28px;
   border-radius:8px;
-  background:#3a2c1e;
-  color:#f4f1ea;
+  background:#f4f1ea;
+  color:#1a120c;
   font-size:1rem;
   cursor:pointer;
 }
@@ -1501,11 +1507,13 @@ body.garden-mode #panel-garden{
 
 .ml-stage{
   position:relative;
-  height:420px;
-  border-radius:24px;
+  flex:1;
+  min-height:0;
+  height:auto;
+  border-radius:20px;
   overflow:hidden;
-  background:#1c2230;
-  box-shadow:0 8px 20px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.08);
+  background:#121722;
+  box-shadow:0 8px 20px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.08);
 }
 .ml-board{
   position:absolute;
