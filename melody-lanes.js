@@ -11,9 +11,10 @@
 
   const NOTES_ORDER = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C_HIGH'];
   const KEY_LABELS = ['C', 'D', 'E', 'F', 'G', 'A', 'B', "C'"];
+  // Brighter kid-friendly rainbow (same hue family per note as clarinet)
   const NOTE_COLORS = {
-    C: '#cf6f52', D: '#dd8f42', E: '#e2b558', F: '#a4a260',
-    G: '#57ab90', A: '#5f8fb0', B: '#8c7fc4', C_HIGH: '#eee5d6',
+    C: '#ff6b5c', D: '#ff9f3d', E: '#ffd84a', F: '#b8e04a',
+    G: '#4ad9a0', A: '#5bb8ff', B: '#b18cff', C_HIGH: '#ffe9c8',
   };
 
   // Melody-lanes original keys + PulmoPlay arrow aliases for F/G

@@ -1421,7 +1421,7 @@ body.immersive-mode #panel-lanes:not([hidden]){
   min-height:0;
   display:flex;
   flex-direction:column;
-  background:linear-gradient(165deg, #1a1f2c 0%, #242b3a 42%, #1c2230 100%);
+  background:#ffffff;
   border-radius:0;
   padding:64px 12px 12px;
   box-shadow:none;
@@ -1430,39 +1430,39 @@ body.immersive-mode #panel-lanes:not([hidden]){
   margin:0 0 4px;
   text-align:center;
   font-size:1.35rem;
-  color:#f4f1ea;
+  color:#2a3344;
 }
 .lanes-tagline{
   margin:0 0 4px;
   text-align:center;
   font-size:.82rem;
-  color:rgba(244,241,234,.78);
+  color:#5a6678;
 }
 .ml-song-select{
   margin-left:6px;
   max-width:min(100%, 280px);
   padding:4px 10px;
-  border:1px solid rgba(255,255,255,.2);
+  border:1px solid #d5dce8;
   border-radius:10px;
-  background:rgba(255,255,255,.12);
-  color:#f4f1ea;
+  background:#fff;
+  color:#2a3344;
   font:inherit;
   font-weight:700;
   cursor:pointer;
 }
-.ml-song-select option{color:#1a120c; background:#f4f1ea;}
+.ml-song-select option{color:#1a120c; background:#fff;}
 .ml-song-select:disabled{
   opacity:.65;
   cursor:not-allowed;
 }
-.lanes-tagline.soft{margin-bottom:8px; font-size:.75rem; color:rgba(244,241,234,.62);}
+.lanes-tagline.soft{margin-bottom:8px; font-size:.75rem; color:#7a8699;}
 .ml-ai-status{
   margin:0 0 10px;
   text-align:center;
   font-size:.72rem;
-  color:rgba(244,241,234,.62);
+  color:#7a8699;
 }
-.ml-ai-status.ready{color:#7ddea0; font-weight:650;}
+.ml-ai-status.ready{color:#1f9a5a; font-weight:650;}
 
 .ml-controls{
   display:flex;
@@ -1479,15 +1479,16 @@ body.immersive-mode #panel-lanes:not([hidden]){
   gap:6px;
   padding:6px 10px;
   border-radius:12px;
-  background:rgba(255,255,255,.12);
+  background:#f3f6fb;
+  border:1px solid #e2e8f0;
   font-weight:700;
-  color:#f4f1ea;
+  color:#2a3344;
 }
 .ml-speed-btn{
   border:none;
   width:28px;height:28px;
   border-radius:8px;
-  background:#f4f1ea;
+  background:#ffe08a;
   color:#1a120c;
   font-size:1rem;
   cursor:pointer;
@@ -1499,10 +1500,11 @@ body.immersive-mode #panel-lanes:not([hidden]){
   min-width:56px;
   padding:4px 8px;
   border-radius:10px;
-  background:#0c0e0b;
-  color:#f4f1ea;
+  background:#f3f6fb;
+  border:1px solid #e2e8f0;
+  color:#2a3344;
 }
-.ml-stat .t-label{color:var(--cyan); font-size:.5rem;}
+.ml-stat .t-label{color:#3aa8c0; font-size:.5rem;}
 .ml-stat span:last-child{font-weight:700; font-size:.95rem;}
 
 .ml-stage{
@@ -1512,8 +1514,8 @@ body.immersive-mode #panel-lanes:not([hidden]){
   height:auto;
   border-radius:20px;
   overflow:hidden;
-  background:#121722;
-  box-shadow:0 8px 20px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.08);
+  background:#ffffff;
+  box-shadow:0 6px 18px rgba(40,60,90,.12), inset 0 0 0 1px #e8edf5;
 }
 .ml-board{
   position:absolute;
@@ -1524,14 +1526,14 @@ body.immersive-mode #panel-lanes:not([hidden]){
 .ml-lane{
   position:relative;
   flex:1;
-  background:rgba(255,255,255,.03);
-  border-right:1px solid rgba(255,255,255,.05);
+  background:#fff;
+  border-right:1px solid #eef2f7;
 }
 .ml-lane:last-child{border-right:none;}
 .ml-lane-tint{
   position:absolute;
   inset:0;
-  opacity:.22;
+  opacity:.28;
 }
 .ml-lane-label{
   position:absolute;
@@ -1548,13 +1550,13 @@ body.immersive-mode #panel-lanes:not([hidden]){
   justify-content:center;
   font-weight:800;
   color:#1a120c;
-  box-shadow:0 2px 6px rgba(0,0,0,.25);
+  box-shadow:0 2px 6px rgba(40,60,90,.18);
 }
 .ml-hit-zone{
   position:absolute;
   left:0;right:0;bottom:0;
   height:80px;
-  background:#0a0a0a;
+  background:#2a3344;
   z-index:5;
   display:flex;
   align-items:center;
@@ -1568,20 +1570,20 @@ body.immersive-mode #panel-lanes:not([hidden]){
   font-size:1.05rem;
   color:#1a120c;
   cursor:pointer;
-  box-shadow:0 4px 10px rgba(0,0,0,.35);
+  box-shadow:0 4px 10px rgba(40,60,90,.22);
   transition:transform .2s ease, box-shadow .2s ease, width .2s ease, height .2s ease;
 }
-.ml-bell.high{color:#1a120c; box-shadow:0 4px 10px rgba(0,0,0,.35), inset 0 0 0 2px rgba(0,0,0,.15);}
+.ml-bell.high{color:#1a120c; box-shadow:0 4px 10px rgba(40,60,90,.22), inset 0 0 0 2px rgba(0,0,0,.12);}
 .ml-bell.pressed{transform:scale(.9);}
 .ml-bell.manual{
   width:64px;height:64px;
   transform:scale(1.08);
-  box-shadow:0 0 0 3px rgba(80,200,120,.75), 0 6px 14px rgba(0,0,0,.4);
+  box-shadow:0 0 0 3px rgba(80,200,120,.75), 0 6px 14px rgba(40,60,90,.28);
 }
 .ml-bell.ai{
   width:78px;height:78px;
   transform:scale(1.2);
-  box-shadow:0 0 0 4px rgba(250,204,50,.9), 0 8px 20px rgba(0,0,0,.45);
+  box-shadow:0 0 0 4px rgba(250,204,50,.9), 0 8px 20px rgba(40,60,90,.3);
   animation:ml-ai-pulse 0.8s ease-in-out infinite;
 }
 @keyframes ml-ai-pulse{
@@ -1593,7 +1595,7 @@ body.immersive-mode #panel-lanes:not([hidden]){
   position:absolute;
   left:0;right:0;bottom:0;
   height:80px;
-  background:#0a0a0a;
+  background:#2a3344;
   z-index:2;
   pointer-events:none;
 }
@@ -1607,12 +1609,12 @@ body.immersive-mode #panel-lanes:not([hidden]){
   position:absolute;
   width:56px;
   height:42px;
-  border-radius:10px;
-  box-shadow:0 4px 12px rgba(0,0,0,.35), 0 0 10px rgba(255,255,255,.15);
+  border-radius:12px;
+  box-shadow:0 4px 12px rgba(40,60,90,.22), 0 0 0 2px rgba(255,255,255,.55) inset;
   transform:translateY(-50%);
 }
 .ml-falling-note.high{
-  box-shadow:0 4px 12px rgba(0,0,0,.35), inset 0 0 0 2px rgba(0,0,0,.2);
+  box-shadow:0 4px 12px rgba(40,60,90,.22), inset 0 0 0 2px rgba(0,0,0,.14);
 }
 
 .ml-countdown{
@@ -1622,11 +1624,11 @@ body.immersive-mode #panel-lanes:not([hidden]){
   display:flex;
   align-items:center;
   justify-content:center;
-  background:rgba(12,14,18,.72);
+  background:rgba(255,255,255,.82);
   backdrop-filter:blur(4px);
   font-size:6rem;
   font-weight:800;
-  color:#f4f1ea;
+  color:#2a3344;
 }
 .ml-countdown[hidden]{display:none;}
 .ml-flash{
@@ -1636,7 +1638,7 @@ body.immersive-mode #panel-lanes:not([hidden]){
   z-index:15;
   padding:6px 14px;
   border-radius:999px;
-  background:rgba(0,0,0,.65);
+  background:#2a3344;
   color:#fff;
   font-weight:700;
   font-size:.85rem;
@@ -1653,13 +1655,14 @@ body.immersive-mode #panel-lanes:not([hidden]){
   margin:10px 0 0;
   text-align:center;
   font-size:.7rem;
-  color:rgba(244,241,234,.65);
+  color:#7a8699;
   flex-shrink:0;
 }
 .lanes-hint kbd{
   display:inline-block;
-  background:rgba(255,255,255,.14);
-  color:#f4f1ea;
+  background:#f3f6fb;
+  color:#2a3344;
+  border:1px solid #e2e8f0;
   border-radius:4px;
   padding:1px 5px;
   margin:0 1px;
