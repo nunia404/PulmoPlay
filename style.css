@@ -448,8 +448,8 @@ body.immersive-mode .app-footer,
 body.immersive-mode .breath-test-btn{
   display:none;
 }
-body.immersive-mode #panel-garden,
-body.immersive-mode #panel-lanes{
+body.immersive-mode #panel-garden:not([hidden]),
+body.immersive-mode #panel-lanes:not([hidden]){
   flex:1;
   width:100%;
   min-height:0;
